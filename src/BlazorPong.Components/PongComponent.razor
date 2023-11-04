@@ -1,0 +1,409 @@
+﻿@using BlazorPong.Web.Shared;
+@using Microsoft.AspNetCore.Http.Connections;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using Microsoft.JSInterop;
+
+<h2 id="message" class="makeGolden">@PlayerTypeMessage</h2>
+
+<div class="row">
+    @if (Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State != HubConnectionState.Reconnecting))
+    {
+        <h4 class="makeGolden">@ConnectionMessage</h4>
+        <div class="form-row align-items-center">
+            <div class="col-auto my-1">
+                <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type</label>
+                <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" @onchange=SetChoice>
+                    @foreach (var connectionType in ConnectionTypesDictionary.Keys)
+                    {
+                        <option value=@connectionType>@connectionType</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto my-1">
+                <button type="button" @onclick="ConnectToHub" class="btn btn-primary">Connect</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (GameMessage != null)
+        {
+            <h4 class="col makeGolden">@GameMessage</h4>
+        }
+        @if (_playerType != ClientType.Spectator && GameMessage == null)
+        {
+            <button type="button" @onclick="SetPlayerIsReady" class="btn btn-success col">Play</button>
+        }
+        <div class="col makeRed">Player 1: @Player1Points</div>
+        <div class="col makeGreen">Player 2: @Player2Points</div>
+    }
+    @* Solo per centrare il contenuto *@
+    <div class="col"></div>
+</div>
+
+<div id="area">
+    <div id="tophorizontalboundary"></div>
+    <div id="leftverticalboundary"></div>
+    @*
+    TODO: Fix this
+    left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player1"))?.LeftPx ?? "100px");
+    top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player1"))?.TopPx ?? "100px");
+    left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player2"))?.LeftPx ?? "880px");
+    top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player2"))?.TopPx ?? "100px");
+    left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("ball"))?.LeftPx ?? "500px");
+    top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("ball"))?.TopPx ?? "250px");
+    public string ToStyle() => $@"
+    top: {Top}%;
+    left: {Left}%;
+    ";
+    style="@game.Ball.Rect.ToStyle()"
+    *@
+    @foreach (var kvPair in GameObjectsDict)
+    {
+        // ball, player1 e player2
+        <div id="@kvPair.Key" draggable=@kvPair.Value.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, kvPair.Value))"></div>
+    }
+    <div id="bottomhorizontalboundary"></div>
+    <div id="rightverticalboundary"></div>
+</div>
+
+@code {
+    public Dictionary<string, GameObject> GameObjectsDict = new();
+    protected HubConnection? Connection;
+    protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new Dictionary<string, HttpTransportType>()
+        {
+            {
+                nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets
+            },
+            {
+                nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling
+            },
+            {
+                nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents
+            },
+        };
+    protected ClientType _playerType;
+    private double _mouseOffset = 0;
+    protected int Player1Points;
+    protected int Player2Points;
+    protected string? PlayerTypeMessage;
+    protected string? GameMessage;
+    protected string? ConnectionMessage;
+    private Timer? _updateServerTimer;
+    private HttpTransportType _connectionTypeChoice;
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = default!;
+    [Parameter]
+    public string GameHubEndpoint { get; set; } = default!;
+    [Inject]
+    public IJSRuntime JsRuntime { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        ConnectionMessage = "Please select a type of connection and click 'Connect'.";
+
+        _connectionTypeChoice = HttpTransportType.WebSockets;
+    }
+
+    public async Task ConnectToHub()
+    {
+        await SetOnbeforeunload();
+
+        // 44399 DEVELOPMENT(IIS)
+        // 443 PROD o DEV BlazorPong Env(Forced Https)
+        var endpoint = GameHubEndpoint.Equals("rel") ? $"{NavigationManager.BaseUri}gamehub" : GameHubEndpoint;
+        Connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, _connectionTypeChoice)
+            .WithAutomaticReconnect()
+            .Build();
+
+        Connection.On<GameObject>("UpdateGameObjectPositionOnClient", UpdateGameObjectPositionOnClient);
+        Connection.On<ClientType, int>("UpdatePlayerPoints", UpdatePlayerPoints);
+        Connection.On<string>("UpdateGameMessage", UpdateGameMessage);
+
+        await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+
+        await Connection.StartAsync();
+
+        await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+
+        await LogOnClient("ConnectionId: " + Connection.ConnectionId?.ToString());
+
+        // Ricavo che tipo di player sono(1, 2 o spettatore)
+        _playerType = await Connection.InvokeAsync<ClientType>("GetClientType");
+
+        await LogOnClient("Player type:" + _playerType.ToString());
+
+        switch (_playerType)
+        {
+            case ClientType.Player1:
+                PlayerTypeMessage = "You are Player1";
+                break;
+            case ClientType.Player2:
+                PlayerTypeMessage = "You are Player2";
+                break;
+            default:
+                PlayerTypeMessage = "You are a Spectator";
+                break;
+        }
+
+        GetOrInitializeGameObjects();
+
+        await LogOnClient("GameObjects initialization completed.");
+
+        // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
+        // Iniziamo un secondo dopo l'inizializzazione del timer
+        _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
+
+
+        await LogOnClient("Timer Started!");
+    }
+
+    private async void UpdateGameMessage(string serverMessage)
+    {
+        GameMessage = serverMessage;
+        StateHasChanged();
+
+        // Lascio che l'utente veda il messaggio finale
+        await Task.Delay(10000);
+
+        // Lo resetto a null per mostrare il pulsante play
+        GameMessage = null;
+
+        // Resetto i player points
+        Player1Points = 0;
+        Player2Points = 0;
+
+        StateHasChanged();
+    }
+
+    private Task UpdatePlayerPoints(ClientType clientType, int points)
+    {
+        switch (clientType)
+        {
+            case ClientType.Player1:
+                Player1Points = points;
+                GameMessage = "Player1 just made a point!";
+                break;
+            case ClientType.Player2:
+                Player2Points = points;
+                GameMessage = "Player2 just made a point!";
+                break;
+        }
+
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+
+    public void MoveOnYAxisAndFlag(DragEventArgs e, GameObject go)
+    {
+        if (!go.Draggable)
+        {
+            return;
+        }
+
+        // Calcolo prima di tutto l'offset del mouse se necessario
+        if ((int)_mouseOffset == 0)
+        {
+            _mouseOffset = e.ClientY - go.Top;
+        }
+
+        // Non devo considerare l'offset nel calcolo
+        var nextTop = e.ClientY - _mouseOffset;
+
+        // TODO: Limit here how much a drag event can move in a single drag
+
+        // Il top può andare da un minimo di 10 a un massimo di 400(500 - altezza player)
+        if (nextTop < 0)
+        {
+            return;
+        }
+        if (nextTop < 10)
+        {
+            nextTop = 10;
+        }
+        else if (nextTop > 400)
+        {
+            nextTop = 400;
+        }
+
+        // Ignoro l'asse x e quindi il left, che deve rimanere sempre uguale, e imposto come mosso e quindi da inviare l'oggetto
+        // Di cui si è fatto il drag
+        // TODO: Limit here how much a drag event can move in a single drag
+
+        go = go with
+            {
+                Top = nextTop,
+                LastUpdateTicks = DateTimeOffset.UtcNow.Ticks
+            };
+    }
+
+    private async void UpdateServer(object? state)  // Note the '?' here
+    {
+        try
+        {
+            await UpdateServerAsync();
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions
+            Console.WriteLine(ex);
+        }
+    }
+
+    private async Task UpdateServerAsync()
+    {
+        if (_playerType == ClientType.Spectator)
+        {
+            return;
+        }
+
+        await UpdateGameObjectPositions();
+        await VerifyPlayerBallCollisionSafe();
+    }
+
+    private async Task VerifyPlayerBallCollisionSafe()
+    {
+        if (_playerType == ClientType.Spectator)
+        {
+            return;
+        }
+
+        var key = _playerType == ClientType.Player1 ? "player1" : "player2";
+
+        if (GameObjectsDict.TryGetValue(key, out var playerGameObject))
+        {
+            if (VerifyPlayerBallCollisionImpl(playerGameObject, GameObjectsDict["ball"]))
+            {
+                await Connection!.SendAsync($"On{_playerType.ToString()}Hit");
+            }
+        }
+    }
+
+    private bool VerifyPlayerBallCollisionImpl(GameObject gameObjectA, GameObject gameObjectB)
+    {
+        var aLeft = gameObjectA.Left;
+        var aTop = gameObjectA.Top;
+        var aWidth = gameObjectA.Width;
+        var aHeight = gameObjectA.Height;
+        var bLeft = gameObjectB.Left;
+        var bTop = gameObjectB.Top;
+        var bWidth = gameObjectB.Width;
+        var bHeight = gameObjectB.Height;
+
+        return !(
+            aTop + aHeight <= bTop ||
+            aTop >= bTop + bHeight ||
+            aLeft + aWidth <= bLeft ||
+            aLeft >= bLeft + bWidth
+        );
+    }
+
+    private async Task UpdateGameObjectPositions()
+    {
+        foreach (var kvpair in GameObjectsDict)
+        {
+            var go = kvpair.Value;
+            if (go.NeedsToSendUpdate)
+            {
+                await Connection.SendAsync("UpdateGameObjectPosition", go);
+                go.LastSentUpdate = DateTimeOffset.UtcNow.Ticks;
+            }
+        }
+    }
+
+    private async void GetOrInitializeGameObjects()
+    {
+        // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
+        GameObjectsDict = await Connection.InvokeAsync<Dictionary<string, GameObject>>("GetGameObjects");
+
+        // Infine setto i draggable che non dipendono dal server
+        foreach (var kvpair in GameObjectsDict)
+        {
+            kvpair.Value.Draggable = kvpair.Key.Equals(_playerType.ToString().ToLower());
+        }
+    }
+
+    /// <summary>
+    /// Chiamato ogni 40 ms dal server per ridisegnare la posizione della pallina in movimento, lo sfrutto anche per ridisegnare il player
+    /// </summary>
+    private void UpdateGameObjectPositionOnClient(GameObject updatedObj)
+    {
+        if (GameMessage != null && GameMessage != "Game started!")
+        {
+            GameMessage = "Game started!";
+        }
+
+        if(GameObjectsDict.TryGetValue(updatedObj.Id, out var foundObj))
+        {
+            foundObj = foundObj with { Top = updatedObj.Top, Left = updatedObj.Left };
+        }
+
+        // If possible, understand how to remove every StateHasChanged()
+        StateHasChanged();
+    }
+
+    public async void Dispose()
+    {
+        // Dispose del timer
+        _updateServerTimer?.Dispose();
+
+        // Chiusura della connessione manualmente perchè l'evento non viene chiamato dal framework
+        if (Connection != null)
+        {
+            await Connection.StopAsync();
+        }
+
+        try
+        {
+            await UnsetOnbeforeunload();
+        }
+        catch
+        {
+            //Catch silente, perchè se l'utente si disconnette e non cambia semplicemente tab, l'evento non esiste già più.
+        }
+    }
+
+    private async Task SetOnbeforeunload()
+    {
+        await JsRuntime.InvokeAsync<object>("blazorJSPongInterop.setOnbeforeunload", DotNetObjectReference.Create(this));
+    }
+
+    private async Task UnsetOnbeforeunload()
+    {
+        await JsRuntime.InvokeAsync<object>("blazorJSPongInterop.unsetOnbeforeunload", DotNetObjectReference.Create(this));
+    }
+
+    /// <summary>
+    /// Metodo utilizzato per loggare lato client, a scopo dimostrativo non essendoci un logger ufficialmente implementato dalla microsoft, per ora.
+    /// </summary>
+    private async Task LogOnClient(string message)
+    {
+        await JsRuntime.InvokeAsync<object>("blazorJSPongInterop.log", message);
+    }
+
+    /// <summary>
+    /// Metodo invocato con cui forzo il dispose in fase di chiusura dell'applicazione
+    /// </summary>
+    /// <returns></returns>
+    [JSInvokable]
+    public Task DisposePongComponent()
+    {
+        Dispose();
+        return Task.CompletedTask;
+    }
+
+    public async void SetPlayerIsReady()
+    {
+        await Connection.SendAsync("SetPlayerIsReady");
+        GameMessage = "Waiting for the other player...";
+        StateHasChanged();
+    }
+
+    public void SetChoice(ChangeEventArgs e)
+    {
+        var selectedValue = e?.Value?.ToString();
+        _connectionTypeChoice = selectedValue != null && ConnectionTypesDictionary.TryGetValue(selectedValue, out var temp) ? temp : HttpTransportType.WebSockets;
+    }
+}

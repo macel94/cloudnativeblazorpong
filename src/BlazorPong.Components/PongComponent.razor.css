@@ -1,0 +1,35 @@
+﻿#player1 {
+    background-color: red;
+    width: 20px;
+    height: 100px;
+    position: absolute;
+}
+
+#player2 {
+    background-color: green;
+    width: 20px;
+    height: 100px;
+    position: absolute;
+}
+
+#ball {
+    background-color: blue;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+}
+
+.makeRed {
+    color: red;
+    text-align: center;
+}
+
+.makeGreen {
+    color: green;
+    text-align: center;
+}
+
+.makeGolden {
+    color: goldenrod;
+    text-align: center;
+}

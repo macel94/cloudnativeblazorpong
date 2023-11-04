@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Web.Client", "Bl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Web.Shared", "BlazorPong.Web\Shared\BlazorPong.Web.Shared.csproj", "{F88838B7-58A6-4359-BF14-554C0CC5D71F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorPong.Components", "BlazorPong.Components\BlazorPong.Components.csproj", "{43C3C42B-BDFE-41A9-A504-C23F0A530511}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Components", "BlazorPong.Components\BlazorPong.Components.csproj", "{43C3C42B-BDFE-41A9-A504-C23F0A530511}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
