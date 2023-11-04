@@ -71,17 +71,17 @@
     public Dictionary<string, GameObject> GameObjectsDict = new();
     protected HubConnection? Connection;
     protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new Dictionary<string, HttpTransportType>()
+    {
         {
-            {
-                nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets
-            },
-            {
-                nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling
-            },
-            {
-                nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents
-            },
-        };
+            nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets
+        },
+        {
+            nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling
+        },
+        {
+            nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents
+        },
+    };
     protected ClientType _playerType;
     private double _mouseOffset = 0;
     protected int Player1Points;
@@ -93,7 +93,7 @@
     private HttpTransportType _connectionTypeChoice;
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
-    [Parameter]
+    [Parameter, EditorRequired]
     public string GameHubEndpoint { get; set; } = default!;
     [Inject]
     public IJSRuntime JsRuntime { get; set; } = default!;
@@ -108,9 +108,6 @@
     public async Task ConnectToHub()
     {
         await SetOnbeforeunload();
-
-        // 44399 DEVELOPMENT(IIS)
-        // 443 PROD o DEV BlazorPong Env(Forced Https)
         var endpoint = GameHubEndpoint.Equals("rel") ? $"{NavigationManager.BaseUri}gamehub" : GameHubEndpoint;
         Connection = new HubConnectionBuilder()
             .WithUrl(endpoint, _connectionTypeChoice)
@@ -305,10 +302,9 @@
         foreach (var kvpair in GameObjectsDict)
         {
             var go = kvpair.Value;
-            if (go.NeedsToSendUpdate)
+            if (go.WasUpdated)
             {
                 await Connection.SendAsync("UpdateGameObjectPosition", go);
-                go.LastSentUpdate = DateTimeOffset.UtcNow.Ticks;
             }
         }
     }
@@ -335,9 +331,10 @@
             GameMessage = "Game started!";
         }
 
-        if(GameObjectsDict.TryGetValue(updatedObj.Id, out var foundObj))
+        if (GameObjectsDict.TryGetValue(updatedObj.Id, out var foundObj))
         {
-            foundObj = foundObj with { Top = updatedObj.Top, Left = updatedObj.Left };
+            foundObj.Top = updatedObj.Top;
+            foundObj.Left = updatedObj.Left;
         }
 
         // If possible, understand how to remove every StateHasChanged()

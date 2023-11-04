@@ -1,0 +1,22 @@
+﻿@using System.Reflection
+@using BlazorPong.Components;
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@page "/pong"
+
+
+<p>
+    Here we are in <strong>@this.GetType().Name</strong> in the <strong>@Assembly.GetExecutingAssembly().FullName</strong> assembly, <br />
+    calling <strong>@nameof(PongComponent)</strong> component, located in the <strong>@typeof(PongComponent).Assembly.FullName assembly</strong>
+</p>
+
+<PongComponent GameHubEndpoint="@GetGameHubEndpointFromConfig()" />
+
+@code
+{
+
+    string GetGameHubEndpointFromConfig()
+    {
+        return Configuration.GetValue<string>("GameHubEndpoint");
+    }
+}

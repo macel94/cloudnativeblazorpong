@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.ResponseCompression;
+﻿using BlazorPong.Web.Server.SignalRHub;
+using Microsoft.AspNetCore.SignalR.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+builder.Services.AddTransient<HubConnectionBuilder>();
+builder.Services.AddSingleton<ServerGameController>();
+builder.Services.AddSignalR();
+builder.Services.AddHostedService<Broadcaster>();
 
 var app = builder.Build();
 
