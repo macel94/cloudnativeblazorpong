@@ -53,23 +53,26 @@
     top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player2"))?.TopPx ?? "100px");
     left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("ball"))?.LeftPx ?? "500px");
     top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("ball"))?.TopPx ?? "250px");
-    public string ToStyle() => $@"
-    top: {Top}%;
-    left: {Left}%;
-    ";
     style="@game.Ball.Rect.ToStyle()"
     *@
-    @foreach (var kvPair in GameObjectsDict)
+    @if (Ball != null && Player1 != null && Player2 != null)
     {
-        // ball, player1 e player2
-        <div id="@kvPair.Key" draggable=@kvPair.Value.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, kvPair.Value))"></div>
+        <div id="ball" draggable=@Ball.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Ball))"
+             style="@Ball.ToStyle()" />
+        <div id="player1" draggable=@Player1.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Player1))"
+             style="@Player1.ToStyle()" />
+        <div id="player2" draggable=@Player2.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Player2))"
+             style="@Player2.ToStyle()" />  
     }
     <div id="bottomhorizontalboundary"></div>
     <div id="rightverticalboundary"></div>
 </div>
 
 @code {
-    public Dictionary<string, GameObject> GameObjectsDict = new();
+    private Dictionary<string, GameObject> GameObjectsDict = new();
+    private GameObject? Ball => GameObjectsDict.TryGetValue("ball", out var ball) ? ball : null;
+    private GameObject? Player1 => GameObjectsDict.TryGetValue("player1", out var player1) ? player1 : null;
+    private GameObject? Player2 => GameObjectsDict.TryGetValue("player2", out var player2) ? player2 : null;
     protected HubConnection? Connection;
     protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new Dictionary<string, HttpTransportType>()
     {

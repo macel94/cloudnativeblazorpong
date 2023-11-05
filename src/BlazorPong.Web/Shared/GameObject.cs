@@ -7,6 +7,8 @@ public record GameObject(string Id, string LastUpdatedBy, int Width, int Height,
     public bool Draggable { get; set; }
     public long LastTickServerReceivedUpdate = 0;
     public bool WasUpdated => LastUpdateTicks > LastTickServerReceivedUpdate;
-    public string LeftPx => $"{(int)Left}px";
-    public string TopPx => $"{(int)Top}px";
+    public string ToStyle() => $@"
+    top: {Top}px;
+    left: {Left}px;
+    ";
 }
