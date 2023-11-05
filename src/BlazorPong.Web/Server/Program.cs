@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddTransient<HubConnectionBuilder>();
+//This will scale differently
 builder.Services.AddSingleton<ServerGameController>();
 builder.Services.AddSignalR();
 builder.Services.AddHostedService<Broadcaster>();
@@ -32,6 +33,7 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
+app.MapHub<GameHub>("/gamehub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

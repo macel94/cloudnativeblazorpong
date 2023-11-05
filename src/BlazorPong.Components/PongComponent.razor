@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Http.Connections;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Microsoft.JSInterop;
+@implements IAsyncDisposable;
 
 <h2 id="message" class="makeGolden">@PlayerTypeMessage</h2>
 
@@ -97,6 +98,17 @@
     public string GameHubEndpoint { get; set; } = default!;
     [Inject]
     public IJSRuntime JsRuntime { get; set; } = default!;
+    public IJSObjectReference? module { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JsRuntime.InvokeAsync<IJSObjectReference>(
+    "import", $"./_content/BlazorPong.Components/{nameof(PongComponent)}.razor.js");
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     protected override void OnInitialized()
     {
@@ -108,7 +120,7 @@
     public async Task ConnectToHub()
     {
         await SetOnbeforeunload();
-        var endpoint = GameHubEndpoint.Equals("rel") ? $"{NavigationManager.BaseUri}gamehub" : GameHubEndpoint;
+        var endpoint = GameHubEndpoint;
         Connection = new HubConnectionBuilder()
             .WithUrl(endpoint, _connectionTypeChoice)
             .WithAutomaticReconnect()
@@ -341,7 +353,7 @@
         StateHasChanged();
     }
 
-    public async void Dispose()
+    public async ValueTask DisposeAsync()
     {
         // Dispose del timer
         _updateServerTimer?.Dispose();
@@ -355,6 +367,7 @@
         try
         {
             await UnsetOnbeforeunload();
+            module?.DisposeAsync();
         }
         catch
         {
@@ -364,12 +377,12 @@
 
     private async Task SetOnbeforeunload()
     {
-        await JsRuntime.InvokeAsync<object>("blazorJSPongInterop.setOnbeforeunload", DotNetObjectReference.Create(this));
+        await module.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this));
     }
 
     private async Task UnsetOnbeforeunload()
     {
-        await JsRuntime.InvokeAsync<object>("blazorJSPongInterop.unsetOnbeforeunload", DotNetObjectReference.Create(this));
+        await module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this));
     }
 
     /// <summary>
@@ -377,7 +390,7 @@
     /// </summary>
     private async Task LogOnClient(string message)
     {
-        await JsRuntime.InvokeAsync<object>("blazorJSPongInterop.log", message);
+        await module.InvokeAsync<object>("log", message);
     }
 
     /// <summary>
@@ -387,8 +400,7 @@
     [JSInvokable]
     public Task DisposePongComponent()
     {
-        Dispose();
-        return Task.CompletedTask;
+        return DisposeAsync().AsTask();
     }
 
     public async void SetPlayerIsReady()

@@ -4,20 +4,15 @@ namespace BlazorPong.Web.Server.SignalRHub;
 
 public class ServerGameController
 {
-    public BallManager BallController;
-    public Dictionary<string, GameObject> GameObjectsDict;
-    private string _player1ConnectionId;
-    private string _player2ConnectionId;
+    public Dictionary<string, GameObject> GameObjectsDict = new();
+    private BallManager? _ballManager;
+    private string? _player1ConnectionId;
+    private string? _player2ConnectionId;
     private bool _player1Ready;
     private bool _player2Ready;
     private int _player1Points;
     private int _player2Points;
     private bool _gameMustReset;
-
-    public ServerGameController()
-    {
-        GameObjectsDict = new();
-    }
 
     public bool MustReset()
     {
@@ -116,25 +111,25 @@ public class ServerGameController
                     GameObjectsDict.Add(tempInitPair.Key, tempInitPair.Value);
 
                     if (tempInitPair.Key == "ball")
-                        BallController = new BallManager(tempInitPair.Value);
+                        _ballManager = new BallManager(tempInitPair.Value);
                 }
             }
         }
         else
         {
             GameObjectsDict = tempInitGameObjects;
-            BallController = new BallManager(tempInitGameObjects["ball"]);
+            _ballManager = new BallManager(tempInitGameObjects["ball"]);
         }
     }
 
     public void OnPlayer1Hit()
     {
-        BallController.OnPlayer1Hit();
+        _ballManager.OnPlayer1Hit();
     }
 
     public void OnPlayer2Hit()
     {
-        BallController.OnPlayer2Hit();
+        _ballManager.OnPlayer2Hit();
     }
 
     public void UpdateGameObjectPositionOnServer(GameObject clientUpdatedObject)
@@ -145,7 +140,7 @@ public class ServerGameController
         {
             gameObject = gameObject with
             {
-                Left = clientUpdatedObject.Left, 
+                Left = clientUpdatedObject.Left,
                 Top = clientUpdatedObject.Top,
                 LastUpdatedBy = clientUpdatedObject.LastUpdatedBy,
                 LastUpdateTicks = clientUpdatedObject.LastUpdateTicks,
@@ -212,5 +207,10 @@ public class ServerGameController
         _gameMustReset = false;
 
         return result;
+    }
+
+    internal string UpdateBallPosition()
+    {
+        return _ballManager.Update();
     }
 }

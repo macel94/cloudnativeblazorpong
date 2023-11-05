@@ -2,6 +2,7 @@
 @using BlazorPong.Components;
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
+@inject NavigationManager NavigationManager
 @page "/pong"
 
 
@@ -10,13 +11,4 @@
     calling <strong>@nameof(PongComponent)</strong> component, located in the <strong>@typeof(PongComponent).Assembly.FullName assembly</strong>
 </p>
 
-<PongComponent GameHubEndpoint="@GetGameHubEndpointFromConfig()" />
-
-@code
-{
-
-    string GetGameHubEndpointFromConfig()
-    {
-        return Configuration.GetValue<string>("GameHubEndpoint");
-    }
-}
+<PongComponent GameHubEndpoint="@($"{NavigationManager.BaseUri}gamehub")" />

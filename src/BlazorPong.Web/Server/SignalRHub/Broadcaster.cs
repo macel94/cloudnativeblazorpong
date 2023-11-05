@@ -14,14 +14,14 @@ public class Broadcaster : BackgroundService
         _gameController = gameController;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        while (!stoppingToken.IsCancellationRequested && _hubContext != null)
+        while (!cancellationToken.IsCancellationRequested && _hubContext != null)
         {
             if (_gameController.MustPlayGame())
             {
                 // Faccio sempre muovere la palla
-                var pointPlayerName = _gameController.BallController.Update();
+                var pointPlayerName = _gameController.UpdateBallPosition();
 
                 // Se nessuno ha fatto punto
                 if (pointPlayerName == null)
@@ -61,7 +61,7 @@ public class Broadcaster : BackgroundService
                     // Da il tempo di visualizzare il messaggio del punto se il gioco non deve essere resettato
                     if (!_gameController.MustReset())
                     {
-                        await Task.Delay(3000, stoppingToken);
+                        await Task.Delay(3000, cancellationToken);
                     }
                 }
             }
@@ -73,7 +73,7 @@ public class Broadcaster : BackgroundService
             }
             else
             {
-                await Task.Delay(10, stoppingToken);
+                await Task.Delay(10, cancellationToken);
             }
         }
     }

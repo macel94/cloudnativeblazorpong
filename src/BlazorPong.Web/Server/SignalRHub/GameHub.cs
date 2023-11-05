@@ -52,7 +52,7 @@ public class GameHub : Hub<IBlazorPongClient>
         }
     }
 
-    public Dictionary<string,GameObject> GetGameObjects()
+    public Dictionary<string, GameObject> GetGameObjects()
     {
         if (_gameController.GameObjectsDict == null || _gameController.GameObjectsDict.Count != 3)
         {
