@@ -6,9 +6,9 @@
 @page "/pong"
 
 
-<p>
+@* <p>
     Here we are in <strong>@this.GetType().Name</strong> in the <strong>@Assembly.GetExecutingAssembly().FullName</strong> assembly, <br />
     calling <strong>@nameof(PongComponent)</strong> component, located in the <strong>@typeof(PongComponent).Assembly.FullName assembly</strong>
-</p>
+</p> *@
 
 <PongComponent GameHubEndpoint="@($"{NavigationManager.BaseUri}gamehub")" />

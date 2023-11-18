@@ -8,7 +8,7 @@ public record GameObject(string Id, string LastUpdatedBy, int Width, int Height,
     public long LastTickServerReceivedUpdate = 0;
     public bool WasUpdated => LastUpdateTicks > LastTickServerReceivedUpdate;
     public string ToStyle() => $@"
-    top: {Top}px;
-    left: {Left}px;
+    top: {Top}%;
+    left: {Left}%;
     ";
 }

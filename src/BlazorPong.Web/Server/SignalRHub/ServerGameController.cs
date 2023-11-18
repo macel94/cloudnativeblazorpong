@@ -74,8 +74,8 @@ public class ServerGameController
                     Width : 20,
                     Height : 100)
                 {
-                    Left = 100,
-                    Top=100
+                    Left=10,
+                    Top=50
                 }
             },
             {
@@ -85,8 +85,8 @@ public class ServerGameController
                     Width : 20,
                     Height : 100)
                 {
-                    Left = 880,
-                    Top=100
+                    Left=90,
+                    Top=50
                 }
             },
             {
@@ -96,8 +96,8 @@ public class ServerGameController
                     Width : 20,
                     Height : 20)
                 {
-                    Left = 500,
-                    Top=250
+                    Left=50,
+                    Top=50
                 }
             }
         };

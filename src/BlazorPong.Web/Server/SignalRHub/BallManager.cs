@@ -25,8 +25,8 @@ public class BallManager
 
     public BallManager(GameObject ballGameObject)
     {
-        ballGameObject.Left = 500;
-        ballGameObject.Top = 250;
+        ballGameObject.Left = 50;
+        ballGameObject.Top = 50;
 
         _gameObject = ballGameObject;
         _speed = 8f;

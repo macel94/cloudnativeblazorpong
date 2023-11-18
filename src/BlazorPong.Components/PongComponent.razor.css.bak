@@ -1,27 +1,24 @@
 ﻿#player1 {
     background-color: red;
     width: 2%;
-    height: 15%;
-    position: relative;
+    height: 10%;
 }
 
 #player2 {
     background-color: green;
-    width: 2%;
-    height: 15%;
-    position: relative;
+    width: 20px;
+    height: 100px;
 }
 
 #ball {
     background-color: blue;
-    width: 2%;
-    height:4%;
-    position: relative;
+    width: 20px;
+    height: 20px;
 }
 
 #gamearea {
     width: 100%;
-    height: 70%;
+    height: 90%;
     background-color: black;
     border: solid;
     border-color: blueviolet;

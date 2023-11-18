@@ -4,12 +4,12 @@
 @using Microsoft.JSInterop;
 @implements IAsyncDisposable;
 
-<h2 id="message" class="makeGolden">@PlayerTypeMessage</h2>
+<h4 id="message" class="makeGolden" style="height:10%">@PlayerTypeMessage</h4>
 
-<div class="row">
+<div class="row" style="height:10%">
     @if (Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State != HubConnectionState.Reconnecting))
     {
-        <h4 class="makeGolden">@ConnectionMessage</h4>
+        <h5 class="makeGolden">@ConnectionMessage</h5>
         <div class="form-row align-items-center">
             <div class="col-auto my-1">
                 <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type</label>
@@ -42,19 +42,7 @@
     <div class="col"></div>
 </div>
 
-<div id="area">
-    <div id="tophorizontalboundary"></div>
-    <div id="leftverticalboundary"></div>
-    @*
-    TODO: Fix this
-    left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player1"))?.LeftPx ?? "100px");
-    top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player1"))?.TopPx ?? "100px");
-    left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player2"))?.LeftPx ?? "880px");
-    top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("player2"))?.TopPx ?? "100px");
-    left: @(GameObjects.FirstOrDefault(g => g.Id.Equals("ball"))?.LeftPx ?? "500px");
-    top: @(GameObjects.FirstOrDefault(g => g.Id.Equals("ball"))?.TopPx ?? "250px");
-    style="@game.Ball.Rect.ToStyle()"
-    *@
+<div id="gamearea">
     @if (Ball != null && Player1 != null && Player2 != null)
     {
         <div id="ball" draggable=@Ball.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Ball))"
@@ -64,8 +52,6 @@
         <div id="player2" draggable=@Player2.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Player2))"
              style="@Player2.ToStyle()" />  
     }
-    <div id="bottomhorizontalboundary"></div>
-    <div id="rightverticalboundary"></div>
 </div>
 
 @code {
@@ -146,18 +132,20 @@
 
         await LogOnClient("Player type:" + _playerType.ToString());
 
-        switch (_playerType)
-        {
-            case ClientType.Player1:
-                PlayerTypeMessage = "You are Player1";
-                break;
-            case ClientType.Player2:
-                PlayerTypeMessage = "You are Player2";
-                break;
-            default:
-                PlayerTypeMessage = "You are a Spectator";
-                break;
-        }
+        PlayerTypeMessage = $"You are {_playerType.ToString()}";
+
+        // switch (_playerType)
+        // {
+        //     case ClientType.Player1:
+        //         PlayerTypeMessage = "You are Player1";
+        //         break;
+        //     case ClientType.Player2:
+        //         PlayerTypeMessage = "You are Player2";
+        //         break;
+        //     default:
+        //         PlayerTypeMessage = "You are a Spectator";
+        //         break;
+        // }
 
         GetOrInitializeGameObjects();
 
@@ -286,14 +274,14 @@
 
         if (GameObjectsDict.TryGetValue(key, out var playerGameObject))
         {
-            if (VerifyPlayerBallCollisionImpl(playerGameObject, GameObjectsDict["ball"]))
+            if (VerifyObjectsCollision(playerGameObject, GameObjectsDict["ball"]))
             {
                 await Connection!.SendAsync($"On{_playerType.ToString()}Hit");
             }
         }
     }
 
-    private bool VerifyPlayerBallCollisionImpl(GameObject gameObjectA, GameObject gameObjectB)
+    private bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
     {
         var aLeft = gameObjectA.Left;
         var aTop = gameObjectA.Top;
@@ -336,9 +324,6 @@
         }
     }
 
-    /// <summary>
-    /// Chiamato ogni 40 ms dal server per ridisegnare la posizione della pallina in movimento, lo sfrutto anche per ridisegnare il player
-    /// </summary>
     private void UpdateGameObjectPositionOnClient(GameObject updatedObj)
     {
         if (GameMessage != null && GameMessage != "Game started!")
