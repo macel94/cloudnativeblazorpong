@@ -30,16 +30,6 @@ public class GameHub : Hub<IBlazorPongClient>
         return ClientType.Spectator;
     }
 
-    public void OnPlayer1Hit()
-    {
-        _gameController.OnPlayer1Hit();
-    }
-
-    public void OnPlayer2Hit()
-    {
-        _gameController.OnPlayer2Hit();
-    }
-
     public void SetPlayerIsReady()
     {
         if (_gameController.GetPlayer1ConnectionId() == Context.ConnectionId)

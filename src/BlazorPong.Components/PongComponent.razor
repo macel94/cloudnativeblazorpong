@@ -12,16 +12,14 @@
         <h5 class="makeGolden">@ConnectionMessage</h5>
         <div class="form-row align-items-center">
             <div class="col-auto my-1">
-                <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type</label>
+                <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type: </label>
                 <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" @onchange=SetChoice>
                     @foreach (var connectionType in ConnectionTypesDictionary.Keys)
                     {
                         <option value=@connectionType>@connectionType</option>
                     }
                 </select>
-            </div>
-            <div class="col-auto my-1">
-                <button type="button" @onclick="ConnectToHub" class="btn btn-primary">Connect</button>
+                <button type="button" @onclick="ConnectToHub" class="btn btn-primary col">Connect</button>
             </div>
         </div>
     }
@@ -45,12 +43,11 @@
 <div id="gamearea">
     @if (Ball != null && Player1 != null && Player2 != null)
     {
-        <div id="ball" draggable=@Ball.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Ball))"
-             style="@Ball.ToStyle()" />
+        <div id="ball" style="@Ball.ToStyle()" />
         <div id="player1" draggable=@Player1.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Player1))"
              style="@Player1.ToStyle()" />
         <div id="player2" draggable=@Player2.Draggable @ondrag="(e => MoveOnYAxisAndFlag(e, Player2))"
-             style="@Player2.ToStyle()" />  
+             style="@Player2.ToStyle()" />
     }
 </div>
 
@@ -88,6 +85,7 @@
     [Inject]
     public IJSRuntime JsRuntime { get; set; } = default!;
     public IJSObjectReference? module { get; set; }
+    private double _containerHeight = 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -95,6 +93,7 @@
         {
             module = await JsRuntime.InvokeAsync<IJSObjectReference>(
     "import", $"./_content/BlazorPong.Components/{nameof(PongComponent)}.razor.js");
+            _containerHeight = await GetContainerHeightAsync();
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -115,9 +114,9 @@
             .WithAutomaticReconnect()
             .Build();
 
-        Connection.On<GameObject>("UpdateGameObjectPositionOnClient", UpdateGameObjectPositionOnClient);
-        Connection.On<ClientType, int>("UpdatePlayerPoints", UpdatePlayerPoints);
-        Connection.On<string>("UpdateGameMessage", UpdateGameMessage);
+        Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
+        Connection.On<ClientType, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
+        Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
 
         await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
 
@@ -196,6 +195,11 @@
         return Task.CompletedTask;
     }
 
+    private async Task<double> GetContainerHeightAsync()
+    {
+        return await module.InvokeAsync<double>("getContainerHeight");
+    }
+
     public void MoveOnYAxisAndFlag(DragEventArgs e, GameObject go)
     {
         if (!go.Draggable)
@@ -203,40 +207,26 @@
             return;
         }
 
-        // Calcolo prima di tutto l'offset del mouse se necessario
+        // Calcolo l'offset del mouse in percentuale rispetto all'altezza del contenitore
         if ((int)_mouseOffset == 0)
         {
-            _mouseOffset = e.ClientY - go.Top;
+            _mouseOffset = (e.ClientY / _containerHeight) * 100 - go.Top;
         }
 
-        // Non devo considerare l'offset nel calcolo
-        var nextTop = e.ClientY - _mouseOffset;
+        // Calcolo la nuova posizione in percentuale
+        var nextTop = (e.ClientY / _containerHeight) * 100 - _mouseOffset;
 
-        // TODO: Limit here how much a drag event can move in a single drag
-
-        // Il top può andare da un minimo di 10 a un massimo di 400(500 - altezza player)
-        if (nextTop < 0)
-        {
-            return;
-        }
-        if (nextTop < 10)
-        {
-            nextTop = 10;
-        }
-        else if (nextTop > 400)
-        {
-            nextTop = 400;
-        }
-
-        // Ignoro l'asse x e quindi il left, che deve rimanere sempre uguale, e imposto come mosso e quindi da inviare l'oggetto
-        // Di cui si è fatto il drag
-        // TODO: Limit here how much a drag event can move in a single drag
+        // Limito la posizione tra 0 e 100, tenendo conto dell'altezza dell'oggetto
+        double maxTop = 100 - (go.Height / _containerHeight) * 100;
+        nextTop = Math.Max(0, Math.Min(nextTop, maxTop));
 
         go = go with
             {
                 Top = nextTop,
                 LastUpdateTicks = DateTimeOffset.UtcNow.Ticks
             };
+
+        StateHasChanged();
     }
 
     private async void UpdateServer(object? state)  // Note the '?' here
@@ -247,57 +237,19 @@
         }
         catch (Exception ex)
         {
-            // Handle exceptions
+            // TODO: handle exceptions
             Console.WriteLine(ex);
         }
     }
 
-    private async Task UpdateServerAsync()
+    private Task UpdateServerAsync()
     {
         if (_playerType == ClientType.Spectator)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        await UpdateGameObjectPositions();
-        await VerifyPlayerBallCollisionSafe();
-    }
-
-    private async Task VerifyPlayerBallCollisionSafe()
-    {
-        if (_playerType == ClientType.Spectator)
-        {
-            return;
-        }
-
-        var key = _playerType == ClientType.Player1 ? "player1" : "player2";
-
-        if (GameObjectsDict.TryGetValue(key, out var playerGameObject))
-        {
-            if (VerifyObjectsCollision(playerGameObject, GameObjectsDict["ball"]))
-            {
-                await Connection!.SendAsync($"On{_playerType.ToString()}Hit");
-            }
-        }
-    }
-
-    private bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
-    {
-        var aLeft = gameObjectA.Left;
-        var aTop = gameObjectA.Top;
-        var aWidth = gameObjectA.Width;
-        var aHeight = gameObjectA.Height;
-        var bLeft = gameObjectB.Left;
-        var bTop = gameObjectB.Top;
-        var bWidth = gameObjectB.Width;
-        var bHeight = gameObjectB.Height;
-
-        return !(
-            aTop + aHeight <= bTop ||
-            aTop >= bTop + bHeight ||
-            aLeft + aWidth <= bLeft ||
-            aLeft >= bLeft + bWidth
-        );
+        return UpdateGameObjectPositions();
     }
 
     private async Task UpdateGameObjectPositions()
@@ -363,22 +315,20 @@
         }
     }
 
-    private async Task SetOnbeforeunload()
+    private Task SetOnbeforeunload()
     {
-        await module.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this));
+        return module.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
     }
 
-    private async Task UnsetOnbeforeunload()
+    private Task UnsetOnbeforeunload()
     {
-        await module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this));
+        return module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
     }
 
-    /// <summary>
-    /// Metodo utilizzato per loggare lato client, a scopo dimostrativo non essendoci un logger ufficialmente implementato dalla microsoft, per ora.
-    /// </summary>
-    private async Task LogOnClient(string message)
+    private Task LogOnClient(string message)
     {
-        await module.InvokeAsync<object>("log", message);
+        // Refactor per usare lo standard ILogger anzichè sta robaccia
+        return module.InvokeAsync<object>("log", message).AsTask();
     }
 
     /// <summary>
@@ -391,7 +341,7 @@
         return DisposeAsync().AsTask();
     }
 
-    public async void SetPlayerIsReady()
+    public async Task SetPlayerIsReady()
     {
         await Connection.SendAsync("SetPlayerIsReady");
         GameMessage = "Waiting for the other player...";

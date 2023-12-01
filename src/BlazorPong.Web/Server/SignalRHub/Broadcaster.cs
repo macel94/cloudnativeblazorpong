@@ -24,7 +24,7 @@ public class Broadcaster : BackgroundService
                 var pointPlayerName = _gameController.UpdateBallPosition();
 
                 // Se nessuno ha fatto punto
-                if (pointPlayerName == null)
+                if (string.IsNullOrEmpty(pointPlayerName))
                 {
                     foreach (var kvPair in _gameController.GameObjectsDict.Where(g => g.Value.WasUpdated))
                     {

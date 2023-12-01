@@ -122,16 +122,6 @@ public class ServerGameController
         }
     }
 
-    public void OnPlayer1Hit()
-    {
-        _ballManager.OnPlayer1Hit();
-    }
-
-    public void OnPlayer2Hit()
-    {
-        _ballManager.OnPlayer2Hit();
-    }
-
     public void UpdateGameObjectPositionOnServer(GameObject clientUpdatedObject)
     {
         var gameObject = GameObjectsDict[clientUpdatedObject.Id];
@@ -211,6 +201,19 @@ public class ServerGameController
 
     internal string UpdateBallPosition()
     {
-        return _ballManager.Update();
+        var res = _ballManager!.Update();
+        GameObjectsDict["ball"] = _ballManager.Ball;
+
+        // Verify collisions between player1 and ball
+        if (_ballManager.VerifyObjectsCollision(_ballManager.Ball, GameObjectsDict["player1"]))
+        {
+            _ballManager.OnPlayer1Hit();
+        }
+        if (_ballManager.VerifyObjectsCollision(_ballManager.Ball, GameObjectsDict["player2"]))
+        {
+            _ballManager.OnPlayer2Hit();
+        }
+
+        return res;
     }
 }

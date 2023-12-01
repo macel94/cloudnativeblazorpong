@@ -14,11 +14,12 @@ public class BallManager
     private const double DegreeToRadians = Math.PI / 180;
 
     private const int LeftBounds = 0;
-    private const int RightBounds = 1000;
+    private const int RightBounds = 100;
     private const int BottomBounds = 0;
-    private const int TopBounds = 500;
+    private const int TopBounds = 100;
 
-    private GameObject _gameObject;
+    private GameObject _ball;
+    public GameObject Ball { get => _ball; }
     private int _angle;
     private readonly float _speed;
     private CollisionItem _lastCollisionItem;
@@ -28,8 +29,8 @@ public class BallManager
         ballGameObject.Left = 50;
         ballGameObject.Top = 50;
 
-        _gameObject = ballGameObject;
-        _speed = 8f;
+        _ball = ballGameObject;
+        _speed = 0.3f;
         var random = new Random(DateTime.Now.Millisecond);
         var next = random.Next(1, 5);
         switch (next)
@@ -49,24 +50,40 @@ public class BallManager
         }
     }
 
-    /// <summary>
-    /// Se è punto ritorna chi lo ha fatto
-    /// </summary>
-    /// <returns></returns>
-    private string HandleWallCollision()
+    public bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
     {
-        if (_gameObject.Left <= LeftBounds)
+        var aLeft = gameObjectA.Left;
+        var aTop = gameObjectA.Top;
+        var aWidth = gameObjectA.Width;
+        var aHeight = gameObjectA.Height;
+        var bLeft = gameObjectB.Left;
+        var bTop = gameObjectB.Top;
+        var bWidth = gameObjectB.Width;
+        var bHeight = gameObjectB.Height;
+
+        return !(
+            aTop + aHeight <= bTop ||
+            aTop >= bTop + bHeight ||
+            aLeft + aWidth <= bLeft ||
+            aLeft >= bLeft + bWidth
+        );
+    }
+
+    private string HandleCollisions()
+    {
+        if (_ball.Left <= LeftBounds)
         {
             return "player2";
         }
 
-        if (_gameObject.Left >= RightBounds)
+        if (_ball.Left >= RightBounds)
         {
             return "player1";
         }
 
-        if (_gameObject.Top <= BottomBounds ||
-            _gameObject.Top >= TopBounds)
+
+        if (_ball.Top <= BottomBounds ||
+            _ball.Top >= TopBounds)
         {
             _lastCollisionItem = CollisionItem.Wall;
             HandleHorizontalWallCollision();
@@ -100,16 +117,16 @@ public class BallManager
     public string Update()
     {
         var currentTicks = DateTimeOffset.UtcNow.Ticks;
-        _gameObject = _gameObject with
+        _ball = _ball with
         {
             LastUpdatedBy = "server",
             LastTickServerReceivedUpdate = currentTicks,
-            LastUpdateTicks = currentTicks,
-            Left = _gameObject.Left + Math.Cos(_angle * DegreeToRadians) * _speed,
-            Top = _gameObject.Top + Math.Sin(_angle * DegreeToRadians) * _speed
+            LastUpdateTicks = currentTicks + 1,// always needs to be re-rendered
+            Left = _ball.Left + Math.Cos(_angle * DegreeToRadians) * _speed,
+            Top = _ball.Top + Math.Sin(_angle * DegreeToRadians) * _speed
         };
 
-        return HandleWallCollision();
+        return HandleCollisions();
     }
 
     public void OnPlayer1Hit()
