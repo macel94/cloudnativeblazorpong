@@ -19,17 +19,20 @@ public class BallManager
     private const int TopBounds = 100;
 
     private GameObject _ball;
+    private readonly ILogger _logger;
+
     public GameObject Ball { get => _ball; }
     private int _angle;
     private readonly float _speed;
     private CollisionItem _lastCollisionItem;
 
-    public BallManager(GameObject ballGameObject)
+    public BallManager(GameObject ballGameObject, ILogger logger)
     {
         ballGameObject.Left = 50;
         ballGameObject.Top = 50;
 
         _ball = ballGameObject;
+        _logger = logger;
         _speed = 0.3f;
         var random = new Random(DateTime.Now.Millisecond);
         var next = random.Next(1, 5);
@@ -61,12 +64,20 @@ public class BallManager
         var bWidth = gameObjectB.Width;
         var bHeight = gameObjectB.Height;
 
-        return !(
-            aTop + aHeight <= bTop ||
-            aTop >= bTop + bHeight ||
-            aLeft + aWidth <= bLeft ||
-            aLeft >= bLeft + bWidth
-        );
+        var result = !(
+                    aTop + aHeight <= bTop ||
+                    aTop >= bTop + bHeight ||
+                    aLeft + aWidth <= bLeft ||
+                    aLeft >= bLeft + bWidth
+                );
+
+        if(result)
+        {
+            _logger.LogInformation($"Collision detected between {gameObjectA.Id} and {gameObjectB.Id}");
+            _logger.LogInformation($"aLeft: {aLeft}, aTop: {aTop}, aWidth: {aWidth}, aHeight: {aHeight}");
+        }
+
+        return result;
     }
 
     private string HandleCollisions()

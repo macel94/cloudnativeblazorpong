@@ -9,7 +9,7 @@ export function unsetOnbeforeunload(instance) {
 };
 
 export function log(message) {
-    console.log(message);
+    console.debug(message);
 };
 
 export function getContainerHeight() {
@@ -18,4 +18,9 @@ export function getContainerHeight() {
         return element.offsetHeight;
     }
     return 0;
+}
+
+export function getContainerTopOffset(containerId) {
+    var container = document.getElementById(containerId);
+    return container.getBoundingClientRect().top + window.scrollY;
 }

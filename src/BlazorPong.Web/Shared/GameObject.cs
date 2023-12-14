@@ -5,8 +5,9 @@ public record GameObject(string Id, string LastUpdatedBy, int Width, int Height,
     public double Left { get; set; }
     public double Top { get; set; }
     public bool Draggable { get; set; }
+    public long LastTickClientKnowsServerReceivedUpdate = 0;
     public long LastTickServerReceivedUpdate = 0;
-    public bool WasUpdated => LastUpdateTicks > LastTickServerReceivedUpdate;
+    public bool WasUpdated => LastUpdateTicks > LastTickClientKnowsServerReceivedUpdate;
     public string ToStyle()
     {
         var culture = System.Globalization.CultureInfo.InvariantCulture;

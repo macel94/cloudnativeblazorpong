@@ -7,11 +7,13 @@ public class Broadcaster : BackgroundService
 {
     private readonly IHubContext<GameHub, IBlazorPongClient> _hubContext;
     private readonly ServerGameController _gameController;
+    private readonly ILogger<Broadcaster> _logger;
 
-    public Broadcaster(IHubContext<GameHub, IBlazorPongClient> hub, ServerGameController gameController)
+    public Broadcaster(IHubContext<GameHub, IBlazorPongClient> hub, ServerGameController gameController, ILogger<Broadcaster> logger)
     {
         _hubContext = hub;
         _gameController = gameController;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)

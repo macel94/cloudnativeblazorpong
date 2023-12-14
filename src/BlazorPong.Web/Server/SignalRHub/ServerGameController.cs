@@ -13,6 +13,12 @@ public class ServerGameController
     private int _player1Points;
     private int _player2Points;
     private bool _gameMustReset;
+    private readonly ILogger<ServerGameController> _logger;
+
+    public ServerGameController(ILogger<ServerGameController> logger)
+    {
+        _logger = logger;
+    }
 
     public bool MustReset()
     {
@@ -111,14 +117,14 @@ public class ServerGameController
                     GameObjectsDict.Add(tempInitPair.Key, tempInitPair.Value);
 
                     if (tempInitPair.Key == "ball")
-                        _ballManager = new BallManager(tempInitPair.Value);
+                        _ballManager = new BallManager(tempInitPair.Value, _logger);
                 }
             }
         }
         else
         {
             GameObjectsDict = tempInitGameObjects;
-            _ballManager = new BallManager(tempInitGameObjects["ball"]);
+            _ballManager = new BallManager(tempInitGameObjects["ball"], _logger);
         }
     }
 
