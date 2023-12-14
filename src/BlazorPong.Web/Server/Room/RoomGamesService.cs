@@ -1,18 +1,19 @@
-﻿using BlazorPong.Web.Shared;
+﻿using BlazorPong.Web.Server.SignalRHub;
+using BlazorPong.Web.Shared;
 using Microsoft.AspNetCore.SignalR;
 
-namespace BlazorPong.Web.Server.SignalRHub;
+namespace BlazorPong.Web.Server.Room;
 
-public class Broadcaster : BackgroundService
+public class RoomGamesService : BackgroundService
 {
     private readonly IHubContext<GameHub, IBlazorPongClient> _hubContext;
-    private readonly ServerGameController _gameController;
-    private readonly ILogger<Broadcaster> _logger;
+    private readonly RoomGameManager _roomGameManager;
+    private readonly ILogger<RoomGamesService> _logger;
 
-    public Broadcaster(IHubContext<GameHub, IBlazorPongClient> hub, ServerGameController gameController, ILogger<Broadcaster> logger)
+    public RoomGamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomGameManager roomGameManager, ILogger<RoomGamesService> logger)
     {
         _hubContext = hub;
-        _gameController = gameController;
+        _roomGameManager = roomGameManager;
         _logger = logger;
     }
 
@@ -20,15 +21,15 @@ public class Broadcaster : BackgroundService
     {
         while (!cancellationToken.IsCancellationRequested && _hubContext != null)
         {
-            if (_gameController.MustPlayGame())
+            if (_roomGameManager.MustPlayGame())
             {
                 // Faccio sempre muovere la palla
-                var pointPlayerName = _gameController.UpdateBallPosition();
+                var pointPlayerName = _roomGameManager.UpdateBallPosition();
 
                 // Se nessuno ha fatto punto
                 if (string.IsNullOrEmpty(pointPlayerName))
                 {
-                    foreach (var kvPair in _gameController.GameObjectsDict.Where(g => g.Value.WasUpdated))
+                    foreach (var kvPair in _roomGameManager.GameObjectsDict.Where(g => g.Value.WasUpdated))
                     {
                         kvPair.Value.LastTickServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks;
 
@@ -50,27 +51,27 @@ public class Broadcaster : BackgroundService
                     // Altrimenti aggiungo il punto e resetto il tutto
                     if (pointPlayerName.Equals("player1"))
                     {
-                        playerPoints = _gameController.AddPlayer1Point();
+                        playerPoints = _roomGameManager.AddPlayer1Point();
                         playerType = ClientType.Player1;
                     }
                     else
                     {
-                        playerPoints = _gameController.AddPlayer2Point();
+                        playerPoints = _roomGameManager.AddPlayer2Point();
                         playerType = ClientType.Player2;
                     }
 
                     await _hubContext.Clients.All.UpdatePlayerPoints(playerType, playerPoints);
                     // Da il tempo di visualizzare il messaggio del punto se il gioco non deve essere resettato
-                    if (!_gameController.MustReset())
+                    if (!_roomGameManager.MustReset())
                     {
                         await Task.Delay(3000, cancellationToken);
                     }
                 }
             }
 
-            if (_gameController.MustReset())
+            if (_roomGameManager.MustReset())
             {
-                string gameOverMessage = _gameController.GetGameOverMessage();
+                var gameOverMessage = _roomGameManager.GetGameOverMessage();
                 await _hubContext.Clients.All.UpdateGameMessage(gameOverMessage);
             }
             else

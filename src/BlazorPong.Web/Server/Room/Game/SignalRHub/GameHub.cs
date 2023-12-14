@@ -1,16 +1,17 @@
-﻿using BlazorPong.Web.Shared;
+﻿using BlazorPong.Web.Server.Room;
+using BlazorPong.Web.Shared;
 using Microsoft.AspNetCore.SignalR;
 
 namespace BlazorPong.Web.Server.SignalRHub;
 
 public class GameHub : Hub<IBlazorPongClient>
 {
-    private readonly ServerGameController _gameController;
+    private readonly RoomGameManager _gameController;
 
     // Tramite DI
-    public GameHub(ServerGameController sgc)
+    public GameHub(RoomGameManager roomGamesManager)
     {
-        _gameController = sgc;
+        _gameController = roomGamesManager;
     }
 
     public void UpdateGameObjectPosition(GameObject clientGameObject)
@@ -56,11 +57,11 @@ public class GameHub : Hub<IBlazorPongClient>
     public override async Task OnConnectedAsync()
     {
         // Teniamo così traccia di chi è quale player
-        if (_gameController.GetPlayer1ConnectionId() == null)
+        if (string.IsNullOrEmpty(_gameController.GetPlayer1ConnectionId()))
         {
             _gameController.SetPlayer1ConnectionId(Context.ConnectionId);
         }
-        else if (_gameController.GetPlayer2ConnectionId() == null)
+        else if (string.IsNullOrEmpty(_gameController.GetPlayer2ConnectionId()))
         {
             _gameController.SetPlayer2ConnectionId(Context.ConnectionId);
         }

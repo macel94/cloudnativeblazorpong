@@ -1,4 +1,5 @@
-﻿using BlazorPong.Web.Server.SignalRHub;
+﻿using BlazorPong.Web.Server.Room;
+using BlazorPong.Web.Server.SignalRHub;
 using Microsoft.AspNetCore.SignalR.Client;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,9 +11,9 @@ builder.Services.AddLogging();
 builder.Services.AddRazorPages();
 builder.Services.AddTransient<HubConnectionBuilder>();
 //This will scale differently
-builder.Services.AddSingleton<ServerGameController>();
+builder.Services.AddSingleton<RoomGameManager>();
 builder.Services.AddSignalR();
-builder.Services.AddHostedService<Broadcaster>();
+builder.Services.AddHostedService<RoomGamesService>();
 
 var app = builder.Build();
 

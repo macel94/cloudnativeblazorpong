@@ -1,21 +1,22 @@
-﻿using BlazorPong.Web.Shared;
+﻿using BlazorPong.Web.Server.Game;
+using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.SignalRHub;
+namespace BlazorPong.Web.Server.Room;
 
-public class ServerGameController
+public class RoomGameManager
 {
     public Dictionary<string, GameObject> GameObjectsDict = new();
     private BallManager? _ballManager;
-    private string? _player1ConnectionId;
-    private string? _player2ConnectionId;
+    private string _player1ConnectionId = string.Empty;
+    private string _player2ConnectionId = string.Empty;
     private bool _player1Ready;
     private bool _player2Ready;
     private int _player1Points;
     private int _player2Points;
     private bool _gameMustReset;
-    private readonly ILogger<ServerGameController> _logger;
+    private readonly ILogger<RoomGameManager> _logger;
 
-    public ServerGameController(ILogger<ServerGameController> logger)
+    public RoomGameManager(ILogger<RoomGameManager> logger)
     {
         _logger = logger;
     }
@@ -27,41 +28,41 @@ public class ServerGameController
 
     public bool MustPlayGame()
     {
-        return this.GameObjectsDict.Count == 3
-            && this._player1ConnectionId != null
-            && this._player2ConnectionId != null
-            && this._player1Ready
-            && this._player2Ready;
+        return GameObjectsDict.Count == 3
+            && !string.IsNullOrEmpty(_player1ConnectionId)
+            && !string.IsNullOrEmpty(_player2ConnectionId)
+            && _player1Ready
+            && _player2Ready;
     }
 
     public string GetPlayer1ConnectionId()
     {
-        return this._player1ConnectionId;
+        return _player1ConnectionId;
     }
 
     public string GetPlayer2ConnectionId()
     {
-        return this._player2ConnectionId;
+        return _player2ConnectionId;
     }
 
     public void SetPlayer1ConnectionId(string id)
     {
-        this._player1ConnectionId = id;
+        _player1ConnectionId = id;
     }
 
     public void SetPlayer1IsReady(bool ready)
     {
-        this._player1Ready = ready;
+        _player1Ready = ready;
     }
 
     public void SetPlayer2IsReady(bool ready)
     {
-        this._player2Ready = ready;
+        _player2Ready = ready;
     }
 
     public void SetPlayer2ConnectionId(string id)
     {
-        this._player2ConnectionId = id;
+        _player2ConnectionId = id;
     }
 
     /// <summary>
@@ -75,10 +76,10 @@ public class ServerGameController
         {
             {
                 "player1",
-                new GameObject(Id: "player1",
+                new(Id: "player1",
                     LastUpdatedBy: string.Empty,
-                    Width : 20,
-                    Height : 100)
+                    Width : 2,
+                    Height : 9)
                 {
                     Left=10,
                     Top=50
@@ -86,10 +87,10 @@ public class ServerGameController
             },
             {
                 "player2",
-                new GameObject(Id : "player2",
+                new(Id : "player2",
                     LastUpdatedBy: string.Empty,
-                    Width : 20,
-                    Height : 100)
+                    Width: 2,
+                    Height: 9)
                 {
                     Left=90,
                     Top=50
@@ -97,10 +98,10 @@ public class ServerGameController
             },
             {
                 "ball",
-                new GameObject(Id : "ball",
+                new(Id : "ball",
                     LastUpdatedBy: string.Empty,
-                    Width : 20,
-                    Height : 20)
+                    Width: 1.5,
+                    Height: 3)
                 {
                     Left=50,
                     Top=50
@@ -117,14 +118,14 @@ public class ServerGameController
                     GameObjectsDict.Add(tempInitPair.Key, tempInitPair.Value);
 
                     if (tempInitPair.Key == "ball")
-                        _ballManager = new BallManager(tempInitPair.Value, _logger);
+                        _ballManager = new(tempInitPair.Value, _logger);
                 }
             }
         }
         else
         {
             GameObjectsDict = tempInitGameObjects;
-            _ballManager = new BallManager(tempInitGameObjects["ball"], _logger);
+            _ballManager = new(tempInitGameObjects["ball"], _logger);
         }
     }
 
@@ -185,7 +186,7 @@ public class ServerGameController
 
     public string GetGameOverMessage()
     {
-        string result = null;
+        var result = string.Empty;
         // Dato che prendo il messaggio, riporto i punti a 0 come anche lo stato di player ready
         if (_player1Points == 3)
         {

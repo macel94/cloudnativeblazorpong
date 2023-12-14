@@ -1,27 +1,14 @@
-﻿using BlazorPong.Web.Shared;
+﻿using System.Text;
+using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.SignalRHub;
+namespace BlazorPong.Web.Server.Game;
 
 public class BallManager
 {
-    private enum CollisionItem
-    {
-        Wall = 0,
-        Player1 = 1,
-        Player2 = 2
-    }
-
-    private const double DegreeToRadians = Math.PI / 180;
-
-    private const int LeftBounds = 0;
-    private const int RightBounds = 100;
-    private const int BottomBounds = 0;
-    private const int TopBounds = 100;
-
-    private GameObject _ball;
+    private StringBuilder _stringBuilder = new();
     private readonly ILogger _logger;
 
-    public GameObject Ball { get => _ball; }
+    public GameObject Ball { get; private set; }
     private int _angle;
     private readonly float _speed;
     private CollisionItem _lastCollisionItem;
@@ -31,7 +18,7 @@ public class BallManager
         ballGameObject.Left = 50;
         ballGameObject.Top = 50;
 
-        _ball = ballGameObject;
+        Ball = ballGameObject;
         _logger = logger;
         _speed = 0.3f;
         var random = new Random(DateTime.Now.Millisecond);
@@ -64,17 +51,20 @@ public class BallManager
         var bWidth = gameObjectB.Width;
         var bHeight = gameObjectB.Height;
 
-        var result = !(
-                    aTop + aHeight <= bTop ||
+        var result = !(aTop + aHeight <= bTop ||
                     aTop >= bTop + bHeight ||
                     aLeft + aWidth <= bLeft ||
-                    aLeft >= bLeft + bWidth
-                );
+                    aLeft >= bLeft + bWidth);
 
-        if(result)
+        if (result)
         {
-            _logger.LogInformation($"Collision detected between {gameObjectA.Id} and {gameObjectB.Id}");
-            _logger.LogInformation($"aLeft: {aLeft}, aTop: {aTop}, aWidth: {aWidth}, aHeight: {aHeight}");
+            var debugMsg = _stringBuilder
+                            .Clear()
+                            .AppendLine($"Collision detected between {gameObjectA.Id} and {gameObjectB.Id}")
+                            .AppendLine($"aLeft: {aLeft}, aTop: {aTop}, aWidth: {aWidth}, aHeight: {aHeight}")
+                            .AppendLine($"bLeft: {bLeft}, bTop: {bTop}, bWidth: {bWidth}, bHeight: {bHeight}")
+                            .ToString();
+            _logger.LogDebug(debugMsg);
         }
 
         return result;
@@ -82,19 +72,19 @@ public class BallManager
 
     private string HandleCollisions()
     {
-        if (_ball.Left <= LeftBounds)
+        if (Ball.Left <= GameConstants.LeftBounds)
         {
             return "player2";
         }
 
-        if (_ball.Left >= RightBounds)
+        if (Ball.Left >= GameConstants.RightBounds)
         {
             return "player1";
         }
 
 
-        if (_ball.Top <= BottomBounds ||
-            _ball.Top >= TopBounds)
+        if (Ball.Top <= GameConstants.BottomBounds ||
+            Ball.Top >= GameConstants.TopBounds)
         {
             _lastCollisionItem = CollisionItem.Wall;
             HandleHorizontalWallCollision();
@@ -128,13 +118,13 @@ public class BallManager
     public string Update()
     {
         var currentTicks = DateTimeOffset.UtcNow.Ticks;
-        _ball = _ball with
+        Ball = Ball with
         {
             LastUpdatedBy = "server",
             LastTickServerReceivedUpdate = currentTicks,
             LastUpdateTicks = currentTicks + 1,// always needs to be re-rendered
-            Left = _ball.Left + Math.Cos(_angle * DegreeToRadians) * _speed,
-            Top = _ball.Top + Math.Sin(_angle * DegreeToRadians) * _speed
+            Left = Ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * _speed,
+            Top = Ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * _speed
         };
 
         return HandleCollisions();
