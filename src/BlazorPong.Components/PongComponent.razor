@@ -61,6 +61,13 @@
 </div>
 
 @code {
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = default!;
+    [Parameter, EditorRequired]
+    public string GameHubEndpoint { get; set; } = default!;
+    [Inject]
+    public IJSRuntime JsRuntime { get; set; } = default!;
+
     private Dictionary<string, GameObject?> GameObjectsDict = new();
     private StringBuilder _sb = new StringBuilder();
     private GameObject? Ball
@@ -97,12 +104,6 @@
     protected string? ConnectionMessage;
     private Timer? _updateServerTimer;
     private HttpTransportType _connectionTypeChoice;
-    [Inject]
-    public NavigationManager NavigationManager { get; set; } = default!;
-    [Parameter, EditorRequired]
-    public string GameHubEndpoint { get; set; } = default!;
-    [Inject]
-    public IJSRuntime JsRuntime { get; set; } = default!;
     public IJSObjectReference? module { get; set; }
     private double _containerHeight = 0;
 
