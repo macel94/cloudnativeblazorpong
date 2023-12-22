@@ -10,7 +10,6 @@ public class BallManager
 
     public GameObject Ball { get; private set; }
     private int _angle;
-    private readonly float _speed;
     private CollisionItem _lastCollisionItem;
 
     public BallManager(GameObject ballGameObject, ILogger logger)
@@ -20,7 +19,6 @@ public class BallManager
 
         Ball = ballGameObject;
         _logger = logger;
-        _speed = 0.3f;
         var random = new Random(DateTime.Now.Millisecond);
         var next = random.Next(1, 5);
         switch (next)
@@ -122,9 +120,9 @@ public class BallManager
         {
             LastUpdatedBy = "server",
             LastTickServerReceivedUpdate = currentTicks,
-            LastUpdateTicks = currentTicks + 1,// always needs to be re-rendered
-            Left = Ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * _speed,
-            Top = Ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * _speed
+            LastUpdateTicks = currentTicks + 1,// the ball always needs to be re-rendered when received from the server
+            Left = Ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
+            Top = Ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
         };
 
         return HandleCollisions();

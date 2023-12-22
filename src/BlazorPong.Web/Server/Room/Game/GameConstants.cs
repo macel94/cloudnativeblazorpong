@@ -7,5 +7,7 @@
         internal const int RightBounds = 100;
         internal const int BottomBounds = 0;
         internal const int TopBounds = 100;
+        internal const float SpeedPerTick = 1.3f;
+        internal const int NextServerCheckMillisecondsDelay = 33;
     }
 }
