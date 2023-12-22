@@ -1,31 +1,22 @@
-﻿using BlazorPong.Web.Server.Room;
-using BlazorPong.Web.Shared;
+﻿using BlazorPong.Web.Shared;
 using Microsoft.AspNetCore.SignalR;
 
 namespace BlazorPong.Web.Server.Room.Game.SignalRHub;
 
-public class GameHub : Hub<IBlazorPongClient>
+public class GameHub(RoomGameManager roomGamesManager) : Hub<IBlazorPongClient>
 {
-    private readonly RoomGameManager _gameController;
-
-    // Tramite DI
-    public GameHub(RoomGameManager roomGamesManager)
-    {
-        _gameController = roomGamesManager;
-    }
-
     public void UpdateGameObjectPosition(GameObject clientGameObject)
     {
         clientGameObject = clientGameObject with { LastUpdatedBy = Context.ConnectionId };
-        _gameController.UpdateGameObjectPositionOnServer(clientGameObject);
+        roomGamesManager.UpdateGameObjectPositionOnServer(clientGameObject);
     }
 
     public ClientType GetClientType()
     {
-        if (_gameController.GetPlayer1ConnectionId() == Context.ConnectionId)
+        if (roomGamesManager.GetPlayer1ConnectionId() == Context.ConnectionId)
             return ClientType.Player1;
 
-        if (_gameController.GetPlayer2ConnectionId() == Context.ConnectionId)
+        if (roomGamesManager.GetPlayer2ConnectionId() == Context.ConnectionId)
             return ClientType.Player2;
 
         return ClientType.Spectator;
@@ -33,37 +24,37 @@ public class GameHub : Hub<IBlazorPongClient>
 
     public void SetPlayerIsReady()
     {
-        if (_gameController.GetPlayer1ConnectionId() == Context.ConnectionId)
+        if (roomGamesManager.GetPlayer1ConnectionId() == Context.ConnectionId)
         {
-            _gameController.SetPlayer1IsReady(true);
+            roomGamesManager.SetPlayer1IsReady(true);
         }
-        else if (_gameController.GetPlayer2ConnectionId() == Context.ConnectionId)
+        else if (roomGamesManager.GetPlayer2ConnectionId() == Context.ConnectionId)
         {
-            _gameController.SetPlayer2IsReady(true);
+            roomGamesManager.SetPlayer2IsReady(true);
         }
     }
 
     public Dictionary<string, GameObject> GetGameObjects()
     {
-        if (_gameController.GameObjectsDict == null || _gameController.GameObjectsDict.Count != 3)
+        if (roomGamesManager.GameObjectsDict == null || roomGamesManager.GameObjectsDict.Count != 3)
         {
             // Aggiungo solo i mancanti se sono qui
-            _gameController.InitializeGameObjectsOnServer(false);
+            roomGamesManager.InitializeGameObjectsOnServer(false);
         }
 
-        return _gameController.GameObjectsDict;
+        return roomGamesManager.GameObjectsDict!;
     }
 
     public override async Task OnConnectedAsync()
     {
         // Teniamo così traccia di chi è quale player
-        if (string.IsNullOrEmpty(_gameController.GetPlayer1ConnectionId()))
+        if (string.IsNullOrEmpty(roomGamesManager.GetPlayer1ConnectionId()))
         {
-            _gameController.SetPlayer1ConnectionId(Context.ConnectionId);
+            roomGamesManager.SetPlayer1ConnectionId(Context.ConnectionId);
         }
-        else if (string.IsNullOrEmpty(_gameController.GetPlayer2ConnectionId()))
+        else if (string.IsNullOrEmpty(roomGamesManager.GetPlayer2ConnectionId()))
         {
-            _gameController.SetPlayer2ConnectionId(Context.ConnectionId);
+            roomGamesManager.SetPlayer2ConnectionId(Context.ConnectionId);
         }
 
         await base.OnConnectedAsync();
@@ -71,21 +62,21 @@ public class GameHub : Hub<IBlazorPongClient>
 
     public override async Task OnDisconnectedAsync(Exception exception)
     {
-        if (_gameController.GetPlayer1ConnectionId() == Context.ConnectionId)
+        if (roomGamesManager.GetPlayer1ConnectionId() == Context.ConnectionId)
         {
-            if (_gameController.MustPlayGame())
+            if (roomGamesManager.MustPlayGame())
             {
-                _gameController.Player1Disconnected();
+                roomGamesManager.Player1Disconnected();
             }
-            _gameController.SetPlayer1ConnectionId(null);
+            roomGamesManager.SetPlayer1ConnectionId(null);
         }
-        else if (_gameController.GetPlayer2ConnectionId() == Context.ConnectionId)
+        else if (roomGamesManager.GetPlayer2ConnectionId() == Context.ConnectionId)
         {
-            if (_gameController.MustPlayGame())
+            if (roomGamesManager.MustPlayGame())
             {
-                _gameController.Player2Disconnected();
+                roomGamesManager.Player2Disconnected();
             }
-            _gameController.SetPlayer2ConnectionId(null);
+            roomGamesManager.SetPlayer2ConnectionId(null);
         }
 
         await base.OnDisconnectedAsync(exception);

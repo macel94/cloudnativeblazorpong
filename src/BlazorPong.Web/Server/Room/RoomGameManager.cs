@@ -118,7 +118,7 @@ public class RoomGameManager(BallManager ballManager)
         }
         else
         {
-            GameObjectsDict = tempInitGameObjects;
+            GameObjectsDict = tempInitGameObjects!;
             _ballManager.SetBall(tempInitGameObjects["ball"]);
         }
     }
@@ -206,11 +206,11 @@ public class RoomGameManager(BallManager ballManager)
         GameObjectsDict["ball"] = _ballManager.Ball;
 
         // Verify collisions between player1 and ball
-        if (_ballManager.VerifyObjectsCollision(_ballManager.Ball, GameObjectsDict["player1"]))
+        if (_ballManager.VerifyObjectsCollision(_ballManager.Ball!, GameObjectsDict["player1"]!))
         {
             _ballManager.OnPlayer1Hit();
         }
-        if (_ballManager.VerifyObjectsCollision(_ballManager.Ball, GameObjectsDict["player2"]))
+        else if (_ballManager.VerifyObjectsCollision(_ballManager.Ball!, GameObjectsDict["player2"]!))
         {
             _ballManager.OnPlayer2Hit();
         }
