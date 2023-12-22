@@ -12,365 +12,365 @@
 
 <div class="row">
     @if (Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State !=
-    HubConnectionState.Reconnecting))
-    {
-        <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
-        <div class="form-row align-items-center" style="height:10%">
+HubConnectionState.Reconnecting))
+{
+    <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
+    <div class="form-row align-items-center" style="height:10%">
             <div class="col-auto my-1">
                 <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type: </label>
                 <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" @onchange=SetChoice>
                     @foreach (var connectionType in ConnectionTypesDictionary.Keys)
-                    {
-                        <option value=@connectionType>@connectionType</option>
-                    }
+                {
+                    <option value=@connectionType>@connectionType</option>
+                }
                 </select>
                 <button type="button" @onclick="ConnectToHub" class="btn btn-primary col">Connect</button>
             </div>
         </div>
-    }
-    else
+}
+else
+{
+    @if (GameMessage != null)
     {
-        @if (GameMessage != null)
-        {
-            <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
-        }
-        @if (_playerType != ClientType.Spectator && GameMessage == null)
-        {
-            <button type="button" @onclick="SetPlayerIsReady" class="btn btn-success col" style="height:5%">Play</button>
-        }
-        <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
-        <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
+        <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
     }
+    @if (_playerType != ClientType.Spectator && GameMessage == null)
+    {
+        <button type="button" @onclick="SetPlayerIsReady" class="btn btn-success col" style="height:5%">Play</button>
+    }
+    <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
+    <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
+}
     @* Solo per centrare il contenuto *@
     <div class="col"></div>
 </div>
 
 <div id="gamearea">
     @if (Ball != null && Player1 != null && Player2 != null)
-    {
-        <div id="ball" style="@Ball.ToStyle()" />
-        <div id="player1" draggable=@Player1.Draggable
+{
+    <div id="ball" style="@Ball.ToStyle()" />
+    <div id="player1" draggable=@Player1.Draggable
              @ondragstart="@(e => SetInitialMouseOffset(e, Player1))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player1))"
              style="@Player1.ToStyle()" />
-        <div id="player2" draggable=@Player2.Draggable
+    <div id="player2" draggable=@Player2.Draggable
              @ondragstart="@(e => SetInitialMouseOffset(e, Player2))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player2))"
              style="@Player2.ToStyle()" />
-    }
+}
 </div>
 
 @code {
-    [Inject]
-    public NavigationManager NavigationManager { get; set; } = default!;
-    [Parameter, EditorRequired]
-    public string GameHubEndpoint { get; set; } = default!;
-    [Inject]
-    public IJSRuntime JsRuntime { get; set; } = default!;
+[Inject]
+public NavigationManager NavigationManager { get; set; } = default!;
+[Parameter, EditorRequired]
+public string GameHubEndpoint { get; set; } = default!;
+[Inject]
+public IJSRuntime JsRuntime { get; set; } = default!;
 
-    private Dictionary<string, GameObject?> GameObjectsDict = new();
-    private StringBuilder _sb = new StringBuilder();
-    private GameObject? Ball
+private Dictionary<string, GameObject?> GameObjectsDict = new();
+private StringBuilder _sb = new StringBuilder();
+private GameObject? Ball
+{
+    get => GameObjectsDict.GetValueOrDefault("ball", null);
+    set => GameObjectsDict["ball"] = value;
+}
+
+private GameObject? Player1
+{
+    get => GameObjectsDict.GetValueOrDefault("player1", null);
+    set => GameObjectsDict["player1"] = value;
+}
+
+private GameObject? Player2
+{
+    get => GameObjectsDict.GetValueOrDefault("player2", null);
+    set => GameObjectsDict["player2"] = value;
+}
+
+protected HubConnection? Connection;
+protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary =
+new Dictionary<string, HttpTransportType>(){
+    {nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
+    {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
+    {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}};
+protected ClientType _playerType;
+private double _mouseOffset = 0;
+private double _containerTopOffset = 0;
+protected int Player1Points;
+protected int Player2Points;
+protected string? PlayerTypeMessage;
+protected string? GameMessage;
+protected string? ConnectionMessage;
+private Timer? _updateServerTimer;
+private HttpTransportType _connectionTypeChoice;
+public IJSObjectReference? module { get; set; }
+private double _containerHeight = 0;
+
+public void SetInitialMouseOffset(DragEventArgs e, GameObject go)
+{
+    LogOnClient("Drag started for: " + go.Id);
+
+    // Assuming go.Top is the current top position of the element in percentage
+    var currentTopInPixels = (go.Top / 100) * _containerHeight;
+    _mouseOffset = e.ClientY - _containerTopOffset - currentTopInPixels;
+}
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender)
     {
-        get => GameObjectsDict.GetValueOrDefault("ball", null);
-        set => GameObjectsDict["ball"] = value;
+        module = await JsRuntime.InvokeAsync<IJSObjectReference>(
+        "import", $"./_content/BlazorPong.Components/{nameof(PongComponent)}.razor.js");
+        _containerHeight = await module.InvokeAsync<double>("getContainerHeight");
+        _containerTopOffset = await module.InvokeAsync<double>("getContainerTopOffset", "gamearea");
+    }
+    await base.OnAfterRenderAsync(firstRender);
+}
+
+protected override void OnInitialized()
+{
+    ConnectionMessage = "Please select a type of connection and click 'Connect'.";
+
+    _connectionTypeChoice = HttpTransportType.WebSockets;
+}
+
+public async Task ConnectToHub()
+{
+    await SetOnbeforeunload();
+    var endpoint = GameHubEndpoint;
+    Connection = new HubConnectionBuilder()
+    .WithUrl(endpoint, _connectionTypeChoice)
+    .WithAutomaticReconnect()
+    .Build();
+
+    Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
+    Connection.On<ClientType, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
+    Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
+
+    await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+
+    await Connection.StartAsync();
+
+    await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+
+    await LogOnClient("ConnectionId: " + Connection.ConnectionId?.ToString());
+
+    // Ricavo che tipo di player sono(1, 2 o spettatore)
+    _playerType = await Connection.InvokeAsync<ClientType>("GetClientType");
+
+    await LogOnClient("Player type:" + _playerType.ToString());
+
+    PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
+
+    GetOrInitializeGameObjects();
+
+    await LogOnClient("GameObjects initialization completed.");
+
+    // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
+    // Iniziamo un secondo dopo l'inizializzazione del timer
+    _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
+
+    await LogOnClient("Timer Started!");
+}
+
+private async void UpdateGameMessage(string serverMessage)
+{
+    GameMessage = serverMessage;
+    StateHasChanged();
+
+    // Lascio che l'utente veda il messaggio finale
+    await Task.Delay(10000);
+
+    // Lo resetto a null per mostrare il pulsante play
+    GameMessage = null;
+
+    // Resetto i player points
+    Player1Points = 0;
+    Player2Points = 0;
+
+    StateHasChanged();
+}
+
+private Task UpdatePlayerPoints(ClientType clientType, int points)
+{
+    switch (clientType)
+    {
+        case ClientType.Player1:
+            Player1Points = points;
+            GameMessage = "Player1 just made a point!";
+            break;
+        case ClientType.Player2:
+            Player2Points = points;
+            GameMessage = "Player2 just made a point!";
+            break;
     }
 
-    private GameObject? Player1
+    StateHasChanged();
+
+    return Task.CompletedTask;
+}
+
+public void MoveOnYAxisAndFlag(DragEventArgs e, GameObject go)
+{
+    if (!go.Draggable || e.ClientY <= 0)
     {
-        get => GameObjectsDict.GetValueOrDefault("player1", null);
-        set => GameObjectsDict["player1"] = value;
+        return;
     }
 
-    private GameObject? Player2
-    {
-        get => GameObjectsDict.GetValueOrDefault("player2", null);
-        set => GameObjectsDict["player2"] = value;
-    }
+    // Calculate the Y position relative to the top of the container
+    var relativeY = e.ClientY - _containerTopOffset;
 
-    protected HubConnection? Connection;
-    protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary =
-    new Dictionary<string, HttpTransportType>(){
-        {nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
-        {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
-        {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}};
-    protected ClientType _playerType;
-    private double _mouseOffset = 0;
-    private double _containerTopOffset = 0;
-    protected int Player1Points;
-    protected int Player2Points;
-    protected string? PlayerTypeMessage;
-    protected string? GameMessage;
-    protected string? ConnectionMessage;
-    private Timer? _updateServerTimer;
-    private HttpTransportType _connectionTypeChoice;
-    public IJSObjectReference? module { get; set; }
-    private double _containerHeight = 0;
+    // Adjust the position with the initial mouse offset
+    var nextTop = (relativeY - _mouseOffset) / _containerHeight * 100;
 
-    public void SetInitialMouseOffset(DragEventArgs e, GameObject go)
-    {
-        LogOnClient("Drag started for: " + go.Id);
+    // Limit the position between 0 and 100, accounting for the object's height
+    double maxTop = 100 - (go.Height / _containerHeight) * 100;
+    nextTop = Math.Max(0, Math.Min(nextTop, maxTop));
 
-        // Assuming go.Top is the current top position of the element in percentage
-        var currentTopInPixels = (go.Top / 100) * _containerHeight;
-        _mouseOffset = e.ClientY - _containerTopOffset - currentTopInPixels;
-    }
+    // Logging all the variables for debug purposes
+    _sb.Clear();
+    _sb.AppendLine($"Dragging: {go.Id}")
+    .AppendLine($"ClientY: {e.ClientY}")
+    .AppendLine($"ContainerTopOffset: {_containerTopOffset}")
+    .AppendLine($"RelativeY: {relativeY}")
+    .AppendLine($"MouseOffset: {_mouseOffset}")
+    .AppendLine($"ContainerHeight: {_containerHeight}")
+    .AppendLine($"NextTop: {nextTop}")
+    .AppendLine($"MaxTop: {maxTop}");
+    LogOnClient(_sb.ToString());
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+    GameObjectsDict[go.Id] = go with
         {
-            module = await JsRuntime.InvokeAsync<IJSObjectReference>(
-            "import", $"./_content/BlazorPong.Components/{nameof(PongComponent)}.razor.js");
-            _containerHeight = await module.InvokeAsync<double>("getContainerHeight");
-            _containerTopOffset = await module.InvokeAsync<double>("getContainerTopOffset", "gamearea");
-        }
-        await base.OnAfterRenderAsync(firstRender);
+            Top = nextTop,
+            LastUpdateTicks = DateTimeOffset.UtcNow.Ticks
+        };
+
+    StateHasChanged();
+}
+
+private async void UpdateServer(object? state)
+{
+    try
+    {
+        await UpdateChangedGameObjectsPositionsOnServer();
+    }
+    catch (Exception ex)
+    {
+        // TODO: handle exceptions
+        Console.WriteLine(ex);
+    }
+}
+
+private async Task UpdateChangedGameObjectsPositionsOnServer()
+{
+    if (_playerType == ClientType.Spectator)
+    {
+        return;
     }
 
-    protected override void OnInitialized()
+    foreach (var kvpair in GameObjectsDict)
     {
-        ConnectionMessage = "Please select a type of connection and click 'Connect'.";
-
-        _connectionTypeChoice = HttpTransportType.WebSockets;
-    }
-
-    public async Task ConnectToHub()
-    {
-        await SetOnbeforeunload();
-        var endpoint = GameHubEndpoint;
-        Connection = new HubConnectionBuilder()
-        .WithUrl(endpoint, _connectionTypeChoice)
-        .WithAutomaticReconnect()
-        .Build();
-
-        Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
-        Connection.On<ClientType, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
-        Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
-
-        await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
-
-        await Connection.StartAsync();
-
-        await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
-
-        await LogOnClient("ConnectionId: " + Connection.ConnectionId?.ToString());
-
-        // Ricavo che tipo di player sono(1, 2 o spettatore)
-        _playerType = await Connection.InvokeAsync<ClientType>("GetClientType");
-
-        await LogOnClient("Player type:" + _playerType.ToString());
-
-        PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
-
-        GetOrInitializeGameObjects();
-
-        await LogOnClient("GameObjects initialization completed.");
-
-        // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
-        // Iniziamo un secondo dopo l'inizializzazione del timer
-        _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
-
-        await LogOnClient("Timer Started!");
-    }
-
-    private async void UpdateGameMessage(string serverMessage)
-    {
-        GameMessage = serverMessage;
-        StateHasChanged();
-
-        // Lascio che l'utente veda il messaggio finale
-        await Task.Delay(10000);
-
-        // Lo resetto a null per mostrare il pulsante play
-        GameMessage = null;
-
-        // Resetto i player points
-        Player1Points = 0;
-        Player2Points = 0;
-
-        StateHasChanged();
-    }
-
-    private Task UpdatePlayerPoints(ClientType clientType, int points)
-    {
-        switch (clientType)
+        var go = kvpair.Value;
+        if (go.WasUpdated)
         {
-            case ClientType.Player1:
-                Player1Points = points;
-                GameMessage = "Player1 just made a point!";
-                break;
-            case ClientType.Player2:
-                Player2Points = points;
-                GameMessage = "Player2 just made a point!";
-                break;
-        }
-
-        StateHasChanged();
-
-        return Task.CompletedTask;
-    }
-
-    public void MoveOnYAxisAndFlag(DragEventArgs e, GameObject go)
-    {
-        if (!go.Draggable || e.ClientY <= 0)
-        {
-            return;
-        }
-
-        // Calculate the Y position relative to the top of the container
-        var relativeY = e.ClientY - _containerTopOffset;
-
-        // Adjust the position with the initial mouse offset
-        var nextTop = (relativeY - _mouseOffset) / _containerHeight * 100;
-
-        // Limit the position between 0 and 100, accounting for the object's height
-        double maxTop = 100 - (go.Height / _containerHeight) * 100;
-        nextTop = Math.Max(0, Math.Min(nextTop, maxTop));
-
-        // Logging all the variables for debug purposes
-        _sb.Clear();
-        _sb.AppendLine($"Dragging: {go.Id}")
-        .AppendLine($"ClientY: {e.ClientY}")
-        .AppendLine($"ContainerTopOffset: {_containerTopOffset}")
-        .AppendLine($"RelativeY: {relativeY}")
-        .AppendLine($"MouseOffset: {_mouseOffset}")
-        .AppendLine($"ContainerHeight: {_containerHeight}")
-        .AppendLine($"NextTop: {nextTop}")
-        .AppendLine($"MaxTop: {maxTop}");
-        LogOnClient(_sb.ToString());
-
-        GameObjectsDict[go.Id] = go with
-            {
-                Top = nextTop,
-                LastUpdateTicks = DateTimeOffset.UtcNow.Ticks
-            };
-
-        StateHasChanged();
-    }
-
-    private async void UpdateServer(object? state)
-    {
-        try
-        {
-            await UpdateChangedGameObjectsPositionsOnServer();
-        }
-        catch (Exception ex)
-        {
-            // TODO: handle exceptions
-            Console.WriteLine(ex);
-        }
-    }
-
-    private async Task UpdateChangedGameObjectsPositionsOnServer()
-    {
-        if (_playerType == ClientType.Spectator)
-        {
-            return;
-        }
-
-        foreach (var kvpair in GameObjectsDict)
-        {
-            var go = kvpair.Value;
-            if (go.WasUpdated)
-            {
-                await Connection.SendAsync("UpdateGameObjectPosition", go);
-                GameObjectsDict[go.Id] = go with
-                    {
-                        LastTickClientKnowsServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks
-                    };
-            }
-        }
-    }
-
-    private async void GetOrInitializeGameObjects()
-    {
-        // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
-        GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>("GetGameObjects");
-
-        // Infine setto i draggable che non dipendono dal server
-        foreach (var kvpair in GameObjectsDict)
-        {
-            kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString().ToLower());
+            await Connection.SendAsync("UpdateGameObjectPosition", go);
+            GameObjectsDict[go.Id] = go with
+                {
+                    LastTickClientKnowsServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks
+                };
         }
     }
+}
 
-    private void UpdateGameObjectPositionOnClient(GameObject updatedObj)
+private async void GetOrInitializeGameObjects()
+{
+    // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
+    GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>("GetGameObjects");
+
+    // Infine setto i draggable che non dipendono dal server
+    foreach (var kvpair in GameObjectsDict)
     {
-        if (GameMessage != null && GameMessage != "Game started!")
-        {
-            GameMessage = "Game started!";
-        }
+        kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString().ToLower());
+    }
+}
 
-        if (GameObjectsDict.TryGetValue(updatedObj.Id, out var foundObj))
-        {
-            foundObj!.Top = updatedObj.Top;
-            foundObj.Left = updatedObj.Left;
-        }
-
-        // If possible, understand how to remove every StateHasChanged()
-        StateHasChanged();
+private void UpdateGameObjectPositionOnClient(GameObject updatedObj)
+{
+    if (GameMessage != null && GameMessage != "Game started!")
+    {
+        GameMessage = "Game started!";
     }
 
-    public async ValueTask DisposeAsync()
+    if (GameObjectsDict.TryGetValue(updatedObj.Id, out var foundObj))
     {
-        // Dispose del timer
-        _updateServerTimer?.Dispose();
-
-        // Chiusura della connessione manualmente perchè l'evento non viene chiamato dal framework
-        if (Connection != null)
-        {
-            await Connection.StopAsync();
-        }
-
-        try
-        {
-            await UnsetOnbeforeunload();
-            module?.DisposeAsync();
-        }
-        catch
-        {
-            //Catch silente, perchè se l'utente si disconnette e non cambia semplicemente tab, l'evento non esiste già più.
-        }
+        foundObj!.Top = updatedObj.Top;
+        foundObj.Left = updatedObj.Left;
     }
 
-    private Task SetOnbeforeunload()
+    // If possible, understand how to remove every StateHasChanged()
+    StateHasChanged();
+}
+
+public async ValueTask DisposeAsync()
+{
+    // Dispose del timer
+    _updateServerTimer?.Dispose();
+
+    // Chiusura della connessione manualmente perchè l'evento non viene chiamato dal framework
+    if (Connection != null)
     {
-        return module.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
+        await Connection.StopAsync();
     }
 
-    private Task UnsetOnbeforeunload()
+    try
     {
-        return module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
+        await UnsetOnbeforeunload();
+        module?.DisposeAsync();
     }
+    catch
+    {
+        //Catch silente, perchè se l'utente si disconnette e non cambia semplicemente tab, l'evento non esiste già più.
+    }
+}
 
-    private Task LogOnClient(string message)
-    {
-        // Refactor per usare lo standard ILogger anzichè sta robaccia
-        return module.InvokeAsync<object>("log", message).AsTask();
-    }
+private Task SetOnbeforeunload()
+{
+    return module.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
+}
 
-    /// <summary>
-    /// Metodo invocato con cui forzo il dispose in fase di chiusura dell'applicazione
-    /// </summary>
-    /// <returns></returns>
-    [JSInvokable]
-    public Task DisposePongComponent()
-    {
-        return DisposeAsync().AsTask();
-    }
+private Task UnsetOnbeforeunload()
+{
+    return module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
+}
 
-    public async Task SetPlayerIsReady()
-    {
-        await Connection.SendAsync("SetPlayerIsReady");
-        GameMessage = "Waiting for the other player...";
-        StateHasChanged();
-    }
+private Task LogOnClient(string message)
+{
+    // Refactor per usare lo standard ILogger anzichè sta robaccia
+    return module.InvokeAsync<object>("log", message).AsTask();
+}
 
-    public void SetChoice(ChangeEventArgs e)
-    {
-        var selectedValue = e?.Value?.ToString();
-        _connectionTypeChoice = selectedValue != null && ConnectionTypesDictionary.TryGetValue(selectedValue, out var temp) ?
-        temp : HttpTransportType.WebSockets;
-    }
+/// <summary>
+/// Metodo invocato con cui forzo il dispose in fase di chiusura dell'applicazione
+/// </summary>
+/// <returns></returns>
+[JSInvokable]
+public Task DisposePongComponent()
+{
+    return DisposeAsync().AsTask();
+}
+
+public async Task SetPlayerIsReady()
+{
+    await Connection.SendAsync("SetPlayerIsReady");
+    GameMessage = "Waiting for the other player...";
+    StateHasChanged();
+}
+
+public void SetChoice(ChangeEventArgs e)
+{
+    var selectedValue = e?.Value?.ToString();
+    _connectionTypeChoice = selectedValue != null && ConnectionTypesDictionary.TryGetValue(selectedValue, out var temp) ?
+    temp : HttpTransportType.WebSockets;
+}
 }

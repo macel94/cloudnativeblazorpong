@@ -1,23 +1,19 @@
 ﻿using System.Text;
 using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.Game;
+namespace BlazorPong.Web.Server.Room.Game;
 
 public class BallManager
 {
-    private StringBuilder _stringBuilder = new();
-    private readonly ILogger _logger;
+    private readonly StringBuilder _stringBuilder = new();
+    private readonly ILogger<BallManager> _logger;
 
-    public GameObject Ball { get; private set; }
+    public GameObject? Ball { get; private set; }
     private int _angle;
     private CollisionItem _lastCollisionItem;
 
-    public BallManager(GameObject ballGameObject, ILogger logger)
+    public BallManager(ILogger<BallManager> logger)
     {
-        ballGameObject.Left = 50;
-        ballGameObject.Top = 50;
-
-        Ball = ballGameObject;
         _logger = logger;
         var random = new Random(DateTime.Now.Millisecond);
         var next = random.Next(1, 5);
@@ -36,6 +32,14 @@ public class BallManager
                 _angle = 315;
                 break;
         }
+    }
+
+    public void SetBall(GameObject ballGameObject)
+    {
+        ballGameObject.Left = 50;
+        ballGameObject.Top = 50;
+
+        Ball = ballGameObject;
     }
 
     public bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
@@ -70,7 +74,7 @@ public class BallManager
 
     private string HandleCollisions()
     {
-        if (Ball.Left <= GameConstants.LeftBounds)
+        if (Ball!.Left <= GameConstants.LeftBounds)
         {
             return "player2";
         }
@@ -116,7 +120,7 @@ public class BallManager
     public string Update()
     {
         var currentTicks = DateTimeOffset.UtcNow.Ticks;
-        Ball = Ball with
+        Ball = Ball! with
         {
             LastUpdatedBy = "server",
             LastTickServerReceivedUpdate = currentTicks,

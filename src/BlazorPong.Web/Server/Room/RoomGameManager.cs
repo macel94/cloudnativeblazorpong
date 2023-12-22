@@ -1,12 +1,12 @@
-﻿using BlazorPong.Web.Server.Game;
+﻿using BlazorPong.Web.Server.Room.Game;
 using BlazorPong.Web.Shared;
 
 namespace BlazorPong.Web.Server.Room;
 
-public class RoomGameManager
+public class RoomGameManager(BallManager ballManager)
 {
-    public Dictionary<string, GameObject> GameObjectsDict = new();
-    private BallManager? _ballManager;
+    public Dictionary<string, GameObject?> GameObjectsDict = [];
+    private BallManager _ballManager = ballManager;
     private string _player1ConnectionId = string.Empty;
     private string _player2ConnectionId = string.Empty;
     private bool _player1Ready;
@@ -14,12 +14,6 @@ public class RoomGameManager
     private int _player1Points;
     private int _player2Points;
     private bool _gameMustReset;
-    private readonly ILogger<RoomGameManager> _logger;
-
-    public RoomGameManager(ILogger<RoomGameManager> logger)
-    {
-        _logger = logger;
-    }
 
     public bool MustReset()
     {
@@ -118,14 +112,14 @@ public class RoomGameManager
                     GameObjectsDict.Add(tempInitPair.Key, tempInitPair.Value);
 
                     if (tempInitPair.Key == "ball")
-                        _ballManager = new(tempInitPair.Value, _logger);
+                        _ballManager.SetBall(tempInitPair.Value);
                 }
             }
         }
         else
         {
             GameObjectsDict = tempInitGameObjects;
-            _ballManager = new(tempInitGameObjects["ball"], _logger);
+            _ballManager.SetBall(tempInitGameObjects["ball"]);
         }
     }
 
