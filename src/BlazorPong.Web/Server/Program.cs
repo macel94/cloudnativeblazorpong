@@ -1,18 +1,25 @@
-﻿using BlazorPong.Web.Server.Room;
+﻿using System.Reflection;
+using BlazorPong.Web.Server.Room;
 using BlazorPong.Web.Server.SignalRHub;
-using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllersWithViews();
 builder.Services.AddLogging();
 builder.Services.AddRazorPages();
-builder.Services.AddTransient<HubConnectionBuilder>();
+
 //This will scale differently
 builder.Services.AddSingleton<RoomGameManager>();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddStackExchangeRedis(builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis CS is missing"),
+    options =>
+    {
+        var name = Assembly.GetExecutingAssembly().GetName().Name;
+        options.Configuration.ChannelPrefix = name;
+    }
+);
 builder.Services.AddHostedService<RoomGamesService>();
 
 var app = builder.Build();
