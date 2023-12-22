@@ -1,12 +1,13 @@
 ﻿using BlazorPong.Web.Server.Room.Game;
 using BlazorPong.Web.Shared;
+using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace BlazorPong.Web.Server.Room;
 
-public class RoomGameManager(BallManager ballManager)
+public class RoomGameManager(BallManager ballManager, IDistributedCache cache)
 {
     public Dictionary<string, GameObject?> GameObjectsDict = [];
-    private BallManager _ballManager = ballManager;
     private string _player1ConnectionId = string.Empty;
     private string _player2ConnectionId = string.Empty;
     private bool _player1Ready;
@@ -112,14 +113,14 @@ public class RoomGameManager(BallManager ballManager)
                     GameObjectsDict.Add(tempInitPair.Key, tempInitPair.Value);
 
                     if (tempInitPair.Key == "ball")
-                        _ballManager.SetBall(tempInitPair.Value);
+                        ballManager.SetBall(tempInitPair.Value);
                 }
             }
         }
         else
         {
             GameObjectsDict = tempInitGameObjects!;
-            _ballManager.SetBall(tempInitGameObjects["ball"]);
+            ballManager.SetBall(tempInitGameObjects["ball"]);
         }
     }
 
@@ -202,19 +203,45 @@ public class RoomGameManager(BallManager ballManager)
 
     internal string UpdateBallPosition()
     {
-        var res = _ballManager!.Update();
-        GameObjectsDict["ball"] = _ballManager.Ball;
+        var res = ballManager!.Update();
+        GameObjectsDict["ball"] = ballManager.Ball;
 
         // Verify collisions between player1 and ball
-        if (_ballManager.VerifyObjectsCollision(_ballManager.Ball!, GameObjectsDict["player1"]!))
+        if (ballManager.VerifyObjectsCollision(ballManager.Ball!, GameObjectsDict["player1"]!))
         {
-            _ballManager.OnPlayer1Hit();
+            ballManager.OnPlayer1Hit();
         }
-        else if (_ballManager.VerifyObjectsCollision(_ballManager.Ball!, GameObjectsDict["player2"]!))
+        else if (ballManager.VerifyObjectsCollision(ballManager.Ball!, GameObjectsDict["player2"]!))
         {
-            _ballManager.OnPlayer2Hit();
+            ballManager.OnPlayer2Hit();
         }
 
         return res;
+    }
+
+    internal Task<bool> TryLockRoomAsync(string machineName)
+    {
+        //TODO Implement a service and don't directly use the cache here
+        //private readonly ConnectionMultiplexer _redis;
+        //private readonly IDatabase _database;
+
+        var room = await GetRoomWithoutServerAssigned();
+        if (room != null)
+        {
+            await AssignServerToRoom(Environment.MachineName);
+        }
+
+        // Get rooms of this server without players
+        var roomsToDelete = await GetRoomsWithoutPlayersByServer(Environment.MachineName);
+        foreach (var roomToDelete in roomsToDelete)
+        {
+            await DeleteRoom(roomToDelete);
+        }
+    }
+
+    private Task<Room> GetRoomWithoutServerAssigned()
+    {
+        cache.
+        throw new NotImplementedException();
     }
 }

@@ -9,18 +9,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddLogging();
 builder.Services.AddRazorPages();
+var redisCs = builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis CS is missing");
+var prjName = Assembly.GetExecutingAssembly().GetName().Name;
 builder.Services.AddSignalR()
-    .AddStackExchangeRedis(builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis CS is missing"),
+    .AddStackExchangeRedis(redisCs,
     options =>
     {
-        var name = Assembly.GetExecutingAssembly().GetName().Name;
-        options.Configuration.ChannelPrefix = name;
+        options.Configuration.ChannelPrefix = prjName;
     }
 );
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisCs;
+    options.InstanceName = prjName;
+});
 
 builder.Services.AddSingleton<RoomGameManager>();
 builder.Services.AddTransient<BallManager>();
-builder.Services.AddHostedService<RoomGamesService>();
+builder.Services.AddHostedService<GamesService>();
 
 var app = builder.Build();
 

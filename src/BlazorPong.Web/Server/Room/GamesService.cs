@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace BlazorPong.Web.Server.Room;
 
-public class RoomGamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomGameManager roomGameManager, ILogger<RoomGamesService> logger) 
+public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomGameManager roomGameManager, ILogger<GamesService> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -23,7 +23,7 @@ public class RoomGamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomG
                     if (string.IsNullOrEmpty(pointPlayerName))
                     {
                         foreach (var kvPair in roomGameManager.GameObjectsDict
-                            .Where(kvPair => kvPair.Value != null 
+                            .Where(kvPair => kvPair.Value != null
                                 && kvPair.Value.WasUpdated))
                         {
                             kvPair.Value!.LastTickServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks;
@@ -71,7 +71,33 @@ public class RoomGamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomG
                 }
                 else
                 {
-                    await Task.Delay(GameConstants.NextServerCheckMillisecondsDelay, cancellationToken);
+                    await Task.Delay(GameConstants.GameDelayBetweenTicksInMs, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error in RoomGamesService");
+            }
+        }
+    }
+}
+
+public class RoomService(RoomGameManager roomGameManager, ILogger<RoomService> logger)
+    : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                if(await roomGameManager.TryLockRoomAsync(Environment.MachineName))
+                {
+                    logger.LogInformation($"Room locked for server: {Environment.MachineName}");
+                }
+                else
+                {
+                    await Task.Delay(GameConstants.RoomCheckDelayBetweenTicksInMs, cancellationToken);
                 }
             }
             catch (Exception ex)
