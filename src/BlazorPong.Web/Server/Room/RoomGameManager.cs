@@ -221,27 +221,28 @@ public class RoomGameManager(BallManager ballManager, IDistributedCache cache)
 
     internal Task<bool> TryLockRoomAsync(string machineName)
     {
+        throw new NotImplementedException();
         //TODO Implement a service and don't directly use the cache here
         //private readonly ConnectionMultiplexer _redis;
         //private readonly IDatabase _database;
 
-        var room = await GetRoomWithoutServerAssigned();
-        if (room != null)
-        {
-            await AssignServerToRoom(Environment.MachineName);
-        }
+        //var room = await GetRoomWithoutServerAssigned();
+        //if (room != null)
+        //{
+        //    await AssignServerToRoom(Environment.MachineName);
+        //}
 
-        // Get rooms of this server without players
-        var roomsToDelete = await GetRoomsWithoutPlayersByServer(Environment.MachineName);
-        foreach (var roomToDelete in roomsToDelete)
-        {
-            await DeleteRoom(roomToDelete);
-        }
+        //// Get rooms of this server without players
+        //var roomsToDelete = await GetRoomsWithoutPlayersByServer(Environment.MachineName);
+        //foreach (var roomToDelete in roomsToDelete)
+        //{
+        //    await DeleteRoom(roomToDelete);
+        //}
     }
 
-    private Task<Room> GetRoomWithoutServerAssigned()
-    {
-        cache.
-        throw new NotImplementedException();
-    }
+    //private Task<Room> GetRoomWithoutServerAssigned()
+    //{
+    //    cache.
+    //    throw new NotImplementedException();
+    //}
 }

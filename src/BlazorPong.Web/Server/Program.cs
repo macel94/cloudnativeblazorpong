@@ -2,6 +2,7 @@
 using BlazorPong.Web.Server.Room;
 using BlazorPong.Web.Server.Room.Game;
 using BlazorPong.Web.Server.Room.Game.SignalRHub;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = redisCs;
     options.InstanceName = prjName;
 });
+
+var sqlConnectionString = builder.Configuration.GetConnectionString("AzureSql") ?? throw new Exception("Azure SQL connection string is missing");
+builder.Services.AddDbContext<RoomDbContext>(options => options.UseSqlServer(sqlConnectionString));
 
 builder.Services.AddSingleton<RoomGameManager>();
 builder.Services.AddTransient<BallManager>();
