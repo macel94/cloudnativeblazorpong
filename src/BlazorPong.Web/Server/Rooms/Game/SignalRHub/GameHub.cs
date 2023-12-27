@@ -1,7 +1,7 @@
 ﻿using BlazorPong.Web.Shared;
 using Microsoft.AspNetCore.SignalR;
 
-namespace BlazorPong.Web.Server.Room.Game.SignalRHub;
+namespace BlazorPong.Web.Server.Rooms.Game.SignalRHub;
 
 public class GameHub(RoomGameManager roomGamesManager) : Hub<IBlazorPongClient>
 {

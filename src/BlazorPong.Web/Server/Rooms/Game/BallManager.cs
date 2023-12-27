@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.Room.Game;
+namespace BlazorPong.Web.Server.Rooms.Game;
 
 public class BallManager
 {

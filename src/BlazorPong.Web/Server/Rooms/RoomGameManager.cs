@@ -1,9 +1,6 @@
-﻿using BlazorPong.Web.Server.Room.Game;
+﻿using BlazorPong.Web.Server.Rooms.Game;
 using BlazorPong.Web.Shared;
 using Microsoft.Extensions.Caching.Distributed;
-using StackExchange.Redis;
-
-namespace BlazorPong.Web.Server.Room;
 
 public class RoomGameManager(BallManager ballManager, IDistributedCache cache)
 {

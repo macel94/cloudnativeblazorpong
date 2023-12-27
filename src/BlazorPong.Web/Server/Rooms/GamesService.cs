@@ -1,9 +1,9 @@
-﻿using BlazorPong.Web.Server.Room.Game;
-using BlazorPong.Web.Server.Room.Game.SignalRHub;
+﻿using BlazorPong.Web.Server.Rooms.Game;
+using BlazorPong.Web.Server.Rooms.Game.SignalRHub;
 using BlazorPong.Web.Shared;
 using Microsoft.AspNetCore.SignalR;
 
-namespace BlazorPong.Web.Server.Room;
+namespace BlazorPong.Web.Server.Rooms;
 
 public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomGameManager roomGameManager, ILogger<GamesService> logger)
     : BackgroundService
@@ -91,7 +91,7 @@ public class RoomService(RoomGameManager roomGameManager, ILogger<RoomService> l
         {
             try
             {
-                if(await roomGameManager.TryLockRoomAsync(Environment.MachineName))
+                if (await roomGameManager.TryLockRoomAsync(Environment.MachineName))
                 {
                     logger.LogInformation($"Room locked for server: {Environment.MachineName}");
                 }

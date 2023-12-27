@@ -1,6 +1,6 @@
 ﻿using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.Room.Game.SignalRHub;
+namespace BlazorPong.Web.Server.Rooms.Game.SignalRHub;
 
 public interface IBlazorPongClient
 {
