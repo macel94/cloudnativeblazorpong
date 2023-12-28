@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
 using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Server.Rooms;
-using BlazorPong.Web.Server.Rooms.Game;
-using BlazorPong.Web.Server.Rooms.Game.SignalRHub;
+using BlazorPong.Web.Server.Rooms.Games;
+using BlazorPong.Web.Server.Rooms.Games.Hubs;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,10 +27,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 var sqlConnectionString = builder.Configuration.GetConnectionString("AzureSql") ?? throw new Exception("Azure SQL connection string is missing");
-builder.Services.AddDbContext<PongDbContext>(options => options.UseSqlServer(sqlConnectionString));
+// This singleton is needed for now but when the dictionary in RoomsManager is moved to Redis this can be removed
+builder.Services.AddDbContext<PongDbContext>(options => options.UseSqlServer(sqlConnectionString), contextLifetime: ServiceLifetime.Singleton);
 
-builder.Services.AddSingleton<RoomGameManager>();
 builder.Services.AddTransient<BallManager>();
+builder.Services.AddSingleton<RoomsManager>();
+builder.Services.AddHostedService<RoomService>();
 builder.Services.AddHostedService<GamesService>();
 
 var app = builder.Build();

@@ -1,6 +1,6 @@
 ﻿namespace BlazorPong.Web.Shared;
 
-public enum ClientType
+public enum Role
 {
     Spectator = 0,
     Player1 = 1,

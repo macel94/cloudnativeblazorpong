@@ -34,7 +34,7 @@
         {
             <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
         }
-        @if (_playerType != ClientType.Spectator && GameMessage == null)
+        @if (_playerType != Role.Spectator && GameMessage == null)
         {
             <button type="button" @onclick="SetPlayerIsReady" class="btn btn-success col" style="height:5%">Play</button>
         }
@@ -94,8 +94,8 @@
         {nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
         {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
         {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}
-        };
-    protected ClientType _playerType;
+            };
+    protected Role _playerType;
     private double _mouseOffset = 0;
     private double _containerTopOffset = 0;
     protected int Player1Points;
@@ -146,7 +146,7 @@
         .Build();
 
         Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
-        Connection.On<ClientType, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
+        Connection.On<Role, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
         Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
 
         await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
@@ -158,7 +158,7 @@
         await LogOnClient("ConnectionId: " + Connection.ConnectionId?.ToString());
 
         // Ricavo che tipo di player sono(1, 2 o spettatore)
-        _playerType = await Connection.InvokeAsync<ClientType>("GetClientType");
+        _playerType = await Connection.InvokeAsync<Role>("GetClientType");
 
         await LogOnClient("Player type:" + _playerType.ToString());
 
@@ -193,23 +193,21 @@
         StateHasChanged();
     }
 
-    private Task UpdatePlayerPoints(ClientType clientType, int points)
+    private Task UpdatePlayerPoints(Role clientType, int points)
     {
         switch (clientType)
         {
-            case ClientType.Player1:
+            case Role.Player1:
                 Player1Points = points;
                 GameMessage = "Player1 just made a point!";
                 break;
-            case ClientType.Player2:
+            case Role.Player2:
                 Player2Points = points;
                 GameMessage = "Player2 just made a point!";
                 break;
         }
 
-        StateHasChanged();
-
-        return Task.CompletedTask;
+        return InvokeAsync(StateHasChanged);
     }
 
     public void MoveOnYAxisAndFlag(DragEventArgs e, GameObject go)
@@ -265,7 +263,7 @@
 
     private async Task UpdateChangedGameObjectsPositionsOnServer()
     {
-        if (_playerType == ClientType.Spectator)
+        if (_playerType == Role.Spectator)
         {
             return;
         }
@@ -363,9 +361,9 @@
 
     public async Task SetPlayerIsReady()
     {
-        await Connection.SendAsync("SetPlayerIsReady");
+        await Connection!.SendAsync("SetPlayerIsReady");
         GameMessage = "Waiting for the other player...";
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void SetChoice(ChangeEventArgs e)
