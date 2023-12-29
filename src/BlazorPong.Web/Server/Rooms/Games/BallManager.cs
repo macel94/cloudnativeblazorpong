@@ -6,28 +6,6 @@ namespace BlazorPong.Web.Server.Rooms.Games;
 public class BallManager(ILogger<BallManager> logger)
 {
     private readonly StringBuilder _stringBuilder = new();
-    private int _angleValue;
-
-    private int _angle
-    {
-        get
-        {
-            if (_angleValue == 0)
-            {
-                _angleValue = Random.Shared.Next(1, 5) switch
-                {
-                    1 => 45,
-                    2 => 135,
-                    3 => 225,
-                    4 => 315,
-                    _ => throw new InvalidOperationException("Random number is not between 1 and 4")
-                };
-            }
-            return _angleValue;
-        }
-        set => _angleValue = value;
-    }
-
     private CollisionItem _lastCollisionItem;
 
     public bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
@@ -85,6 +63,7 @@ public class BallManager(ILogger<BallManager> logger)
 
     private void HandleVerticalWallCollision()
     {
+        // Angle needs to be in the roomstate and shared between servers
         switch (_angle)
         {
             case 45: _angle = 135; break;
