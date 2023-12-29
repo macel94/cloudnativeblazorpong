@@ -1,0 +1,14 @@
+﻿@using System.Reflection
+@using BlazorPong.Components;
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@inject NavigationManager NavigationManager
+@page "/room/{roomId:guid}/pong"
+@page "/room"
+
+<PongComponent GameHubEndpoint="@($"{NavigationManager.BaseUri}gamehub")" RoomId="@(RoomId)" />
+
+@code{
+    [Parameter]
+    public Guid? RoomId { get; set; }
+}

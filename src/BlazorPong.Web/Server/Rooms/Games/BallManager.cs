@@ -1,22 +1,20 @@
 ﻿using System.Text;
 using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.Room.Game;
+namespace BlazorPong.Web.Server.Rooms.Games;
 
 public class BallManager
 {
     private readonly StringBuilder _stringBuilder = new();
     private readonly ILogger<BallManager> _logger;
 
-    public GameObject? Ball { get; private set; }
     private int _angle;
     private CollisionItem _lastCollisionItem;
 
     public BallManager(ILogger<BallManager> logger)
     {
         _logger = logger;
-        var random = new Random(DateTime.Now.Millisecond);
-        var next = random.Next(1, 5);
+        var next = Random.Shared.Next(1, 5);
         switch (next)
         {
             case 1:
@@ -32,14 +30,6 @@ public class BallManager
                 _angle = 315;
                 break;
         }
-    }
-
-    public void SetBall(GameObject ballGameObject)
-    {
-        ballGameObject.Left = 50;
-        ballGameObject.Top = 50;
-
-        Ball = ballGameObject;
     }
 
     public bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
@@ -72,21 +62,21 @@ public class BallManager
         return result;
     }
 
-    private string HandleCollisions()
+    private string HandleCollisions(GameObject ball)
     {
-        if (Ball!.Left <= GameConstants.LeftBounds)
+        if (ball!.Left <= GameConstants.LeftBounds)
         {
             return "player2";
         }
 
-        if (Ball.Left >= GameConstants.RightBounds)
+        if (ball.Left >= GameConstants.RightBounds)
         {
             return "player1";
         }
 
 
-        if (Ball.Top <= GameConstants.BottomBounds ||
-            Ball.Top >= GameConstants.TopBounds)
+        if (ball.Top <= GameConstants.BottomBounds ||
+            ball.Top >= GameConstants.TopBounds)
         {
             _lastCollisionItem = CollisionItem.Wall;
             HandleHorizontalWallCollision();
@@ -117,19 +107,19 @@ public class BallManager
         }
     }
 
-    public string Update()
+    public string Update(ref GameObject ball)
     {
         var currentTicks = DateTimeOffset.UtcNow.Ticks;
-        Ball = Ball! with
+        ball = ball! with
         {
             LastUpdatedBy = "server",
             LastTickServerReceivedUpdate = currentTicks,
             LastUpdateTicks = currentTicks + 1,// the ball always needs to be re-rendered when received from the server
-            Left = Ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
-            Top = Ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
+            Left = ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
+            Top = ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
         };
 
-        return HandleCollisions();
+        return HandleCollisions(ball);
     }
 
     public void OnPlayer1Hit()
