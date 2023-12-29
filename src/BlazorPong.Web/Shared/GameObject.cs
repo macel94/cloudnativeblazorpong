@@ -5,8 +5,9 @@ public record GameObject(string Id, string LastUpdatedBy, double Width, double H
     public double Left { get; set; }
     public double Top { get; set; }
     public bool Draggable { get; set; }
-    public long LastTickClientKnowsServerReceivedUpdate = 0;
-    public long LastTickServerReceivedUpdate = 0;
+    public long LastTickClientKnowsServerReceivedUpdate { get; set; }
+    public long LastTickConnectedServerReceivedUpdate { get; set; }
+    public string? LastSinglaRServerReceivedUpdateName { get; set; }
     public bool WasUpdated => LastUpdateTicks > LastTickClientKnowsServerReceivedUpdate;
     public string ToStyle()
     {

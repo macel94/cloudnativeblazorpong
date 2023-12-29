@@ -9,5 +9,6 @@ internal static class GameConstants
     internal const int TopBounds = 100;
     internal const float SpeedPerTick = 1.3f;
     internal const int GameDelayBetweenTicksInMs = 33;
+    internal const int IdleDelayInMs = 10000;
     internal const int RoomCheckDelayBetweenTicksInMs = 10000;
 }

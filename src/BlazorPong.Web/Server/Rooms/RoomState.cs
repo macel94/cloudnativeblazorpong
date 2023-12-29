@@ -5,7 +5,7 @@ namespace BlazorPong.Web.Server.Rooms;
 public class RoomState
 {
     public Guid RoomId { get; set; }
-    public Dictionary<string, GameObject?> GameObjectsDictionary = [];
+    public Dictionary<string, GameObject?> GameObjectsDictionary { get; set; } = [];
     public bool GameMustReset { get; set; }
     public string? Player1ConnectionId { get; set; }
     public string? Player2ConnectionId { get; set; }

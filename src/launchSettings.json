@@ -1,0 +1,26 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "blazorpong.web.server.1",
+      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
+      "serviceActions": {
+        "blazorpong.web.server.1": "StartDebugging",
+        "redis": "StartWithoutDebugging"
+      }
+    },
+    "Compose-Singolo": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "blazorpong.web.server.1",
+      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
+      "serviceActions": {
+        "blazorpong.web.server.1": "StartDebugging",
+        "redis": "StartWithoutDebugging"
+      }
+    }
+  }
+}
