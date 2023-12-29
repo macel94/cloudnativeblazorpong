@@ -1,6 +1,9 @@
 ﻿CREATE TABLE [dbo].[Client]
 (
-	[Id] NVARCHAR(50) NOT NULL PRIMARY KEY ,
-    RoomId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Room(Id) NOT NULL, 
-    [Role] TINYINT NULL
+    [Username] NVARCHAR(50) NOT NULL,
+    [RoomId] UNIQUEIDENTIFIER NOT NULL,
+    [Role] TINYINT NULL,
+    [ConnectionId] NVARCHAR(50) NOT NULL,
+    PRIMARY KEY ([Username], [ConnectionId]),
+    FOREIGN KEY ([RoomId]) REFERENCES Room(Id)
 )

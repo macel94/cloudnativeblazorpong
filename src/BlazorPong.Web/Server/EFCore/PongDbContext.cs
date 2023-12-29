@@ -19,16 +19,17 @@ public partial class PongDbContext : DbContext
     {
         modelBuilder.Entity<Client>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Client__3214EC0786072C76");
+            entity.HasKey(e => new { e.Username, e.ConnectionId }).HasName("PK__tmp_ms_x__776823AC2783C4ED");
 
             entity.ToTable("Client");
 
-            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Username).HasMaxLength(50);
+            entity.Property(e => e.ConnectionId).HasMaxLength(50);
 
             entity.HasOne(d => d.Room).WithMany(p => p.Clients)
                 .HasForeignKey(d => d.RoomId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Client__RoomId__60A75C0F");
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Client__RoomId__02FC7413");
         });
 
         modelBuilder.Entity<Room>(entity =>

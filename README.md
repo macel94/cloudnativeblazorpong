@@ -49,4 +49,4 @@ sudo service redis-server start
 execute the blazor server and you should be good to go
 
 # To Scaffold
-dotnet ef dbcontext scaffold "Name=ConnectionStrings:AzureSql" Microsoft.EntityFrameworkCore.SqlServer -o .\src\BlazorPong.Web\Server\EFCore\Models -c PongDbContext --no-onconfiguring --project .\src\BlazorPong.Web\Server
+dotnet ef dbcontext scaffold "Name=ConnectionStrings:AzureSql" Microsoft.EntityFrameworkCore.SqlServer -o .\EFCore -c PongDbContext --no-onconfiguring --project .\src\BlazorPong.Web\Server -f

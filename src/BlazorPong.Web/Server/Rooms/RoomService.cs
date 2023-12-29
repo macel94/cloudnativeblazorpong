@@ -11,6 +11,7 @@ public class RoomService(RoomsManager roomGameManager, ILogger<RoomService> logg
         {
             try
             {
+                logger.LogInformation("RoomService is running");
                 await roomGameManager.TryLockRoomAsync();
                 await Task.Delay(GameConstants.RoomCheckDelayBetweenTicksInMs, cancellationToken);
             }

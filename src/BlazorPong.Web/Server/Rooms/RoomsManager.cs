@@ -212,7 +212,10 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
         logger.LogInformation("Room locked for server: {MachineName}", Environment.MachineName);
 
         // Add the room the the current in-memory dictionary now that's locked
-        RoomsDictionary.TryAdd(room.Id, new());
+        RoomsDictionary.TryAdd(room.Id, new()
+        {
+            RoomId = room.Id
+        });
 
         return;
     }

@@ -5,32 +5,35 @@
 @using System.Text
 @implements IAsyncDisposable;
 
+<h3>Current User: @username</h3>
 @if (PlayerTypeMessage != null)
 {
     <h4 id="message" class="makeGolden" style="height:10%">@PlayerTypeMessage</h4>
 }
 
 <div class="row">
-    @if (RoomId.HasValue)
+    @* Connection is the first thing as it's needed for anything else *@
+    @if (Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State !=
+    HubConnectionState.Reconnecting))
     {
-        @if (Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State !=
-       HubConnectionState.Reconnecting))
-        {
-            <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
-            <div class="form-row align-items-center" style="height:10%">
-                <div class="col-auto my-1">
-                    <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type: </label>
-                    <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" @onchange=SetChoice>
-                        @foreach (var connectionType in ConnectionTypesDictionary.Keys)
-                        {
-                            <option value=@connectionType>@connectionType</option>
-                        }
-                    </select>
-                    <button type="button" @onclick="ConnectToHub" class="btn btn-primary col">Connect</button>
-                </div>
+        <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
+        <div class="form-row align-items-center" style="height:10%">
+            <div class="col-auto my-1">
+                <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type: </label>
+                <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" @onchange=SetChoice>
+                    @foreach (var connectionType in ConnectionTypesDictionary.Keys)
+                    {
+                        <option value=@connectionType>@connectionType</option>
+                    }
+                </select>
+                <button type="button" @onclick="ConnectToHub" class="btn btn-primary col">Connect</button>
             </div>
-        }
-        else
+        </div>
+    }
+    else
+    {
+        @* Then we need a room and a role for that room *@
+        @if (_playerType.HasValue)
         {
             @if (GameMessage != null)
             {
@@ -43,17 +46,17 @@
             <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
             <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
         }
-        @* Solo per centrare il contenuto *@
-        <div class="col" />
+        else
+        {
+            <div>
+                <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
+                <button @onclick="JoinRoom" class="btn btn-success">Join Room</button>
+            </div>
+            <button @onclick="GenerateRoomId" class="btn btn-primary">Generate Room ID</button>
+        }
     }
-    else
-    {
-        <div>
-            <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
-            <button @onclick="JoinRoom" class="btn btn-success">Join Room</button>
-        </div>
-        <button @onclick="GenerateRoomId" class="btn btn-primary">Generate Room ID</button>
-    }
+    @* Solo per centrare il contenuto *@
+    <div class="col" />
 </div>
 
 <div id="gamearea">
@@ -74,7 +77,7 @@
 @code {
     [Parameter, EditorRequired]
     public Guid? RoomId { get; set; }
-    private string tempRoomId;
+    private string tempRoomId = string.Empty;
 
     [Parameter, EditorRequired]
     public string GameHubEndpoint { get; set; } = default!;
@@ -82,9 +85,13 @@
     public NavigationManager NavigationManager { get; set; } = default!;
     [Inject]
     public IJSRuntime JsRuntime { get; set; } = default!;
+    private HubConnection? Connection;
+
+    // Generate random username for now, in the future will be chosen by the user
+    private string username = $"user_{Guid.NewGuid()}";
 
     private Dictionary<string, GameObject?> GameObjectsDict = new();
-    private StringBuilder _sb = new StringBuilder();
+    private StringBuilder sb = new StringBuilder();
     private GameObject? Ball
     {
         get => GameObjectsDict.GetValueOrDefault("ball", null);
@@ -103,12 +110,11 @@
         set => GameObjectsDict["player2"] = value;
     }
 
-    protected HubConnection? Connection;
     protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new()
     {{nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
         {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
         {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}};
-    protected Role _playerType;
+    protected Role? _playerType = null;
     private double _mouseOffset = 0;
     private double _containerTopOffset = 0;
     protected int Player1Points;
@@ -123,7 +129,7 @@
 
     public void SetInitialMouseOffset(DragEventArgs e, GameObject go)
     {
-        LogOnClient("Drag started for: " + go.Id);
+        LogOnClientAsync("Drag started for: " + go.Id);
 
         // Assuming go.Top is the current top position of the element in percentage
         var currentTopInPixels = (go.Top / 100) * _containerHeight;
@@ -138,6 +144,10 @@
             "import", $"./_content/BlazorPong.Components/{nameof(PongComponent)}.razor.js");
             _containerHeight = await module.InvokeAsync<double>("getContainerHeight");
             _containerTopOffset = await module.InvokeAsync<double>("getContainerTopOffset", "gamearea");
+            if (RoomId.HasValue)
+            {
+                tempRoomId = RoomId.Value.ToString();
+            }
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -162,30 +172,13 @@
         Connection.On<Role, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
         Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
 
-        await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+        await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
 
         await Connection.StartAsync();
 
-        await LogOnClient("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+        await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
 
-        await LogOnClient("ConnectionId: " + Connection.ConnectionId?.ToString());
-
-        // Ricavo che tipo di player sono(1, 2 o spettatore)
-        _playerType = await Connection.InvokeAsync<Role>("GetClientType");
-
-        await LogOnClient("Player type:" + _playerType.ToString());
-
-        PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
-
-        GetOrInitializeGameObjects();
-
-        await LogOnClient("GameObjects initialization completed.");
-
-        // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
-        // Iniziamo un secondo dopo l'inizializzazione del timer
-        _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
-
-        await LogOnClient("Timer Started!");
+        await LogOnClientAsync("ConnectionId: " + Connection.ConnectionId?.ToString());
     }
 
     private async void UpdateGameMessage(string serverMessage)
@@ -241,8 +234,8 @@
         nextTop = Math.Max(0, Math.Min(nextTop, maxTop));
 
         // Logging all the variables for debug purposes
-        _sb.Clear();
-        _sb.AppendLine($"Dragging: {go.Id}")
+        sb.Clear();
+        sb.AppendLine($"Dragging: {go.Id}")
         .AppendLine($"ClientY: {e.ClientY}")
         .AppendLine($"ContainerTopOffset: {_containerTopOffset}")
         .AppendLine($"RelativeY: {relativeY}")
@@ -250,7 +243,7 @@
         .AppendLine($"ContainerHeight: {_containerHeight}")
         .AppendLine($"NextTop: {nextTop}")
         .AppendLine($"MaxTop: {maxTop}");
-        LogOnClient(_sb.ToString());
+        LogOnClientAsync(sb.ToString());
 
         GameObjectsDict[go.Id] = go with
             {
@@ -284,10 +277,10 @@
 
         foreach (var kvpair in GameObjectsDict)
         {
-            var go = kvpair.Value;
+            var go = kvpair.Value!;
             if (go.WasUpdated)
             {
-                await Connection.SendAsync("UpdateGameObjectPosition", go);
+                await Connection!.SendAsync("UpdateGameObjectPosition", RoomId, go);
                 GameObjectsDict[go.Id] = go with
                     {
                         LastTickClientKnowsServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks
@@ -299,7 +292,7 @@
     private async void GetOrInitializeGameObjects()
     {
         // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
-        GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>("GetGameObjects");
+        GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>("GetGameObjects", RoomId);
 
         // Infine setto i draggable che non dipendono dal server
         foreach (var kvpair in GameObjectsDict)
@@ -308,7 +301,7 @@
         }
     }
 
-    private void UpdateGameObjectPositionOnClient(GameObject updatedObj)
+    private void UpdateGameObjectPositionOnClient(GameObject? updatedObj)
     {
         if (GameMessage != null && GameMessage != "Game started!")
         {
@@ -357,7 +350,7 @@
         return module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
     }
 
-    private Task LogOnClient(string message)
+    private Task LogOnClientAsync(string message)
     {
         // Refactor per usare lo standard ILogger anzichè sta robaccia
         return module.InvokeAsync<object>("log", message).AsTask();
@@ -375,7 +368,7 @@
 
     public async Task SetPlayerIsReady()
     {
-        await Connection!.SendAsync("SetPlayerIsReady");
+        await Connection!.SendAsync("SetPlayerIsReady", RoomId);
         GameMessage = "Waiting for the other player...";
         await InvokeAsync(StateHasChanged);
     }
@@ -387,23 +380,53 @@
         temp : HttpTransportType.WebSockets;
     }
 
-    private void GenerateRoomId()
+    private async Task GenerateRoomId()
     {
         RoomId = Guid.NewGuid();
         NavigationManager.NavigateTo($"/room/{RoomId}/pong");
+        // Get what type of player the current user will be
+        try
+        {
+            _playerType = await Connection!.InvokeAsync<Role>("OpenRoom", RoomId, username);
+            await ManageEnteredPlayerTypeAssigned();
+        }
+        catch (Exception ex)
+        {
+            await LogOnClientAsync(ex.ToString());
+        }
     }
 
-    private void JoinRoom()
+    private async Task JoinRoom()
     {
         if (Guid.TryParse(tempRoomId, out var roomId))
         {
             RoomId = roomId;
             NavigationManager.NavigateTo($"/room/{RoomId}/pong");
+            // Get what type of player the current user will be
+            _playerType = await Connection!.InvokeAsync<Role>("JoinRoom", RoomId, username);
+            await ManageEnteredPlayerTypeAssigned();
         }
         else
         {
             // TODO - Handle invalid GUID format
             // e.g., show an error message
         }
+    }
+
+    private async Task ManageEnteredPlayerTypeAssigned()
+    {
+        await LogOnClientAsync("Player type:" + _playerType.ToString());
+
+        PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
+
+        GetOrInitializeGameObjects();
+
+        await LogOnClientAsync("GameObjects initialization completed.");
+
+        // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
+        // Iniziamo un secondo dopo l'inizializzazione del timer
+        _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
+
+        await LogOnClientAsync("Timer Started!");
     }
 }

@@ -130,4 +130,7 @@
     <Build Include="dbo.Room.sql" />
     <Build Include="dbo.Client.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <RefactorLog Include="Blazorpong.Database.AzureSql.refactorlog" />
+  </ItemGroup>
 </Project>

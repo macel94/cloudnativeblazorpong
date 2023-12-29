@@ -14,8 +14,10 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
         {
             try
             {
+                logger.LogInformation("GamesService is running");
                 var roomKeys = roomGameManager.RoomsDictionary.Keys;
-                var tasks = roomKeys.Select(x => ManageGameAsync(hub, x, roomGameManager, cancellationToken));
+                var tasks = roomKeys.Select(x => ManageGameAsync(hub, x, roomGameManager, cancellationToken)).ToList();
+                tasks.Add(Task.Delay(GameConstants.GameDelayBetweenTicksInMs, cancellationToken));
                 await Task.WhenAll(tasks);
             }
             catch (Exception ex)
@@ -25,12 +27,14 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
         }
     }
 
-    private static async Task ManageGameAsync(IHubContext<GameHub, IBlazorPongClient> hub, Guid roomId, RoomsManager roomGameManager, CancellationToken cancellationToken)
+    private async Task ManageGameAsync(IHubContext<GameHub, IBlazorPongClient> hub, Guid roomId, RoomsManager roomGameManager, CancellationToken cancellationToken)
     {
         var roomState = roomGameManager.RoomsDictionary[roomId];
 
         if (roomState.MustPlayGame)
         {
+            logger.LogInformation($"Room {roomId} Game must play");
+
             // Faccio sempre muovere la palla
             var pointPlayerName = roomGameManager.UpdateBallPosition(roomId);
 
@@ -47,12 +51,13 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
 
         if (roomState.GameMustReset)
         {
+            logger.LogInformation($"Room {roomId} Game must reset");
             var gameOverMessage = roomGameManager.GetGameOverMessage(roomId);
             await hub.Clients.Group(roomState.RoomId.ToString()).UpdateGameMessage(gameOverMessage);
         }
         else
         {
-            await Task.Delay(GameConstants.GameDelayBetweenTicksInMs, cancellationToken);
+            logger.LogInformation($"Room {roomId} Game must not reset");
         }
     }
 
