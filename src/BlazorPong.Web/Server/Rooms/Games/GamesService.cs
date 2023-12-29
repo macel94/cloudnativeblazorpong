@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace BlazorPong.Web.Server.Rooms.Games;
 
-public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsManager roomGameManager, ILogger<GamesService> logger)
+public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsManager roomGameManager, RedisRoomStateCache roomsDictionary, ILogger<GamesService> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -14,9 +14,16 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
         {
             try
             {
+                var roomKeys = roomsDictionary.GetRoomKeys();
+                if (roomKeys.Count == 0)
+                {
+                    logger.LogInformation("No rooms found, waiting");
+                    await Task.Delay(GameConstants.IdleDelayInMs, cancellationToken);
+                    continue;
+                }
+
                 logger.LogInformation("GamesService is running");
-                var roomKeys = roomGameManager.RoomsDictionary.Keys;
-                var tasks = roomKeys.Select(x => ManageGameAsync(hub, x, roomGameManager, cancellationToken)).ToList();
+                var tasks = roomKeys.Select(roomKey => ManageGameAsync(hub, roomKey, roomGameManager, cancellationToken)).ToList();
                 tasks.Add(Task.Delay(GameConstants.GameDelayBetweenTicksInMs, cancellationToken));
                 await Task.WhenAll(tasks);
             }
@@ -29,14 +36,20 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
 
     private async Task ManageGameAsync(IHubContext<GameHub, IBlazorPongClient> hub, Guid roomId, RoomsManager roomGameManager, CancellationToken cancellationToken)
     {
-        var roomState = roomGameManager.RoomsDictionary[roomId];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
+
+        if(!roomState.MustPlayGame && !roomState.GameMustReset)
+        {
+            logger.LogInformation($"Room {roomId} Game must not play or reset, waiting");
+            await Task.Delay(GameConstants.IdleDelayInMs, cancellationToken);
+        }
 
         if (roomState.MustPlayGame)
         {
             logger.LogInformation($"Room {roomId} Game must play");
 
             // Faccio sempre muovere la palla
-            var pointPlayerName = roomGameManager.UpdateBallPosition(roomId);
+            var pointPlayerName = await roomGameManager.UpdateBallPosition(roomId);
 
             // Se nessuno ha fatto punto
             if (string.IsNullOrEmpty(pointPlayerName))
@@ -52,7 +65,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
         if (roomState.GameMustReset)
         {
             logger.LogInformation($"Room {roomId} Game must reset");
-            var gameOverMessage = roomGameManager.GetGameOverMessage(roomId);
+            var gameOverMessage = await roomGameManager.GetGameOverMessage(roomId);
             await hub.Clients.Group(roomState.RoomId.ToString()).UpdateGameMessage(gameOverMessage);
         }
         else
@@ -68,12 +81,12 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
         // Altrimenti aggiungo il punto e resetto il tutto
         if (pointPlayerName.Equals("player1"))
         {
-            playerPoints = roomGameManager.AddPlayer1Point(roomState.RoomId);
+            playerPoints = await roomGameManager.AddPlayer1Point(roomState.RoomId);
             playerType = Role.Player1;
         }
         else
         {
-            playerPoints = roomGameManager.AddPlayer2Point(roomState.RoomId);
+            playerPoints = await roomGameManager.AddPlayer2Point(roomState.RoomId);
             playerType = Role.Player2;
         }
 
@@ -91,7 +104,8 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub, RoomsMana
                             .Where(kvPair => kvPair.Value != null
                                 && kvPair.Value.WasUpdated))
         {
-            kvPair.Value!.LastTickServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks;
+            kvPair.Value!.LastTickConnectedServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks;
+            kvPair.Value!.LastSinglaRServerReceivedUpdateName = Environment.MachineName;
 
             // Se so chi ha fatto l'update evito di mandarglielo
             if (kvPair.Value.LastUpdatedBy != null && !kvPair.Value.LastUpdatedBy.Equals("server"))

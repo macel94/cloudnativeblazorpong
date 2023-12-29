@@ -1,17 +1,13 @@
-﻿using System.Collections.Concurrent;
-using BlazorPong.Web.Server.EFCore;
+﻿using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Server.Rooms.Games;
 using BlazorPong.Web.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlazorPong.Web.Server.Rooms;
 
-public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, ILogger<RoomsManager> logger)
+public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, RedisRoomStateCache roomsDictionary, ILogger<RoomsManager> logger)
 {
-    // This is going to be shared between servers so it won't be in memory, and it will be read and written by multiple threads so it must be thread safe
-    public ConcurrentDictionary<Guid, RoomState> RoomsDictionary = [];
-
-    public void InitializeGameObjectsOnServer(Guid roomId, bool forceInitialization)
+    public async Task<RoomState> InitializeGameObjectsOnServer(Guid roomId, bool forceInitialization)
     {
         Dictionary<string, GameObject> tempInitGameObjects = new()
         {
@@ -49,11 +45,10 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
                 }
             }
         };
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
         if (!forceInitialization)
         {
-            var roomState = RoomsDictionary[roomId];
-
             foreach (var tempInitPair in tempInitGameObjects)
             {
                 if (!roomState.GameObjectsDictionary.ContainsKey(tempInitPair.Key))
@@ -64,13 +59,16 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
         }
         else
         {
-            RoomsDictionary[roomId].GameObjectsDictionary = tempInitGameObjects!;
+            roomState.GameObjectsDictionary = tempInitGameObjects!;
         }
+
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
+        return roomState;
     }
 
-    public void UpdateGameObjectPositionOnServer(Guid roomId, GameObject clientUpdatedObject)
+    public async Task UpdateGameObjectPositionOnServer(Guid roomId, GameObject clientUpdatedObject)
     {
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
         var gameObject = roomState.GameObjectsDictionary[clientUpdatedObject.Id];
 
@@ -82,67 +80,72 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
                 Top = clientUpdatedObject.Top,
                 LastUpdatedBy = clientUpdatedObject.LastUpdatedBy,
                 LastUpdateTicks = clientUpdatedObject.LastUpdateTicks,
-                LastTickServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks
+                LastTickConnectedServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks,
+                LastSinglaRServerReceivedUpdateName = Environment.MachineName
             };
 
             roomState.GameObjectsDictionary[clientUpdatedObject.Id] = gameObject;
+            await roomsDictionary.SetRoomStateAsync(roomId, roomState);
         }
     }
 
-    public int AddPlayer1Point(Guid roomId)
+    public async Task<int> AddPlayer1Point(Guid roomId)
     {
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
         roomState.Player1Points++;
-        InitializeGameObjectsOnServer(roomId, true);
-        // Understand if this is redundant or can just be avoided
-        roomState = RoomsDictionary[roomId];
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
+
+        roomState = await InitializeGameObjectsOnServer(roomId, true);
 
         if (roomState.Player1Points == 3)
         {
             roomState.GameMustReset = true;
+            await roomsDictionary.SetRoomStateAsync(roomId, roomState);
         }
+
         return roomState.Player1Points;
     }
 
-    public void Player1Disconnected(Guid roomId)
+    public async Task Player1Disconnected(Guid roomId)
     {
-        InitializeGameObjectsOnServer(roomId, true);
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await InitializeGameObjectsOnServer(roomId, true);
         roomState.Player2Points = 3;
         roomState.GameMustReset = true;
         roomState.Player1ConnectionId = null;
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
     }
 
-    public int AddPlayer2Point(Guid roomId)
+    public async Task<int> AddPlayer2Point(Guid roomId)
     {
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
         roomState.Player2Points++;
-        InitializeGameObjectsOnServer(roomId, true);
-        // Understand if this is redundant or can just be avoided
-        roomState = RoomsDictionary[roomId];
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
+
+        roomState = await InitializeGameObjectsOnServer(roomId, true);
 
         if (roomState.Player2Points == 3)
         {
             roomState.GameMustReset = true;
+            await roomsDictionary.SetRoomStateAsync(roomId, roomState);
         }
         return roomState.Player2Points;
     }
 
-    public void Player2Disconnected(Guid roomId)
+    public async Task Player2Disconnected(Guid roomId)
     {
-        InitializeGameObjectsOnServer(roomId, true);
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await InitializeGameObjectsOnServer(roomId, true);
         roomState.Player1Points = 3;
         roomState.GameMustReset = true;
         roomState.Player2ConnectionId = null;
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
     }
 
-    public string GetGameOverMessage(Guid roomId)
+    public async Task<string> GetGameOverMessage(Guid roomId)
     {
         var result = string.Empty;
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
         // Dato che prendo il messaggio, riporto i punti a 0 come anche lo stato di player ready
         if (roomState.Player1Points == 3)
@@ -159,18 +162,20 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
         roomState.Player2Ready = false;
         roomState.Player1Ready = false;
         roomState.GameMustReset = false;
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
 
         return result;
     }
 
-    internal string UpdateBallPosition(Guid roomId)
+    internal async Task<string> UpdateBallPosition(Guid roomId)
     {
-        var roomState = RoomsDictionary[roomId];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
         var ball = roomState.GameObjectsDictionary["ball"];
         var res = ballManager!.Update(ref ball!);
         // TODO - Understand if this is necessary, ignored during refactoring
         roomState.GameObjectsDictionary["ball"] = ball;
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
 
         // Verify collisions between player1 and ball
         if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary["player1"]!))
@@ -195,7 +200,7 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
             await AssignCurrentServerToRoom(room);
         }
 
-        // Get empty rooms and clear them
+        // TODO - Get empty rooms and either clear them or logically delete them and keep them for stats
         //var roomsToDelete = await GetRoomsWithoutPlayersByServer(Environment.MachineName);
         //foreach (var roomToDelete in roomsToDelete)
         //{
@@ -212,7 +217,7 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
         logger.LogInformation("Room locked for server: {MachineName}", Environment.MachineName);
 
         // Add the room the the current in-memory dictionary now that's locked
-        RoomsDictionary.TryAdd(room.Id, new()
+        await roomsDictionary.SetRoomStateAsync(room.Id, new()
         {
             RoomId = room.Id
         });
@@ -223,5 +228,39 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
     private Task<Room?> TryGetRoomWithoutServerAssignedAsync()
     {
         return pongDbContext.Rooms.FirstOrDefaultAsync(x => x.ServerName == null);
+    }
+
+    internal async Task SetPlayerIsReadyAsync(Guid roomId, string connectionId)
+    {
+        var roomstate = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
+        if (roomstate.Player1ConnectionId == connectionId)
+        {
+            roomstate.Player1Ready = true;
+        }
+        else if (roomstate.Player2ConnectionId == connectionId)
+        {
+            roomstate.Player2Ready = true;
+        }
+
+        await roomsDictionary.SetRoomStateAsync(roomId, roomstate);
+    }
+
+    internal async Task SetPlayerConnectionIdAsync(RoomState roomstate, Role role, string connectionId)
+    {
+        if(role == Role.Spectator)
+        {
+            return;
+        }
+
+        if(role == Role.Player1)
+        {
+            roomstate.Player1ConnectionId = connectionId;
+        }
+        else if(role == Role.Player2)
+        {
+            roomstate.Player2ConnectionId = connectionId;
+        }
+
+        await roomsDictionary.SetRoomStateAsync(roomstate.RoomId, roomstate);
     }
 }

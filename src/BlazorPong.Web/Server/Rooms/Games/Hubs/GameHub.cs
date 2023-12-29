@@ -1,4 +1,4 @@
-﻿using System.Threading;
+﻿using System.Collections.Concurrent;
 using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Shared;
 using BlazorPong.Web.Shared.Hubs;
@@ -8,36 +8,29 @@ using Microsoft.EntityFrameworkCore;
 namespace BlazorPong.Web.Server.Rooms.Games.Hubs;
 
 //TODO Create interface and use method names with nameof on the client side
-public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext, ILogger<GameHub> logger) : Hub<IBlazorPongClient>
+public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext, RedisRoomStateCache roomsDictionary, ILogger<GameHub> logger) : Hub<IBlazorPongClient>
 {
-    public void UpdateGameObjectPosition(Guid roomId, GameObject clientGameObject)
+    public async Task UpdateGameObjectPosition(Guid roomId, GameObject clientGameObject)
     {
         clientGameObject = clientGameObject with { LastUpdatedBy = Context.ConnectionId };
-        roomGamesManager.UpdateGameObjectPositionOnServer(roomId, clientGameObject);
-    }
-    public void SetPlayerIsReady(Guid roomId)
-    {
-        var roomstate = roomGamesManager.RoomsDictionary[roomId];
-        if (roomstate.Player1ConnectionId == Context.ConnectionId)
-        {
-            roomstate.Player1Ready = true;
-        }
-        else if (roomstate.Player2ConnectionId == Context.ConnectionId)
-        {
-            roomstate.Player2Ready = true;
-        }
+        await roomGamesManager.UpdateGameObjectPositionOnServer(roomId, clientGameObject);
     }
 
-    public Dictionary<string, GameObject> GetGameObjects(Guid roomId)
+    public async Task SetPlayerIsReady(Guid roomId)
     {
-        var roomState = (roomGamesManager.RoomsDictionary?[roomId]) ?? throw new InvalidOperationException($"Room with id {roomId} not found");
+        await roomGamesManager.SetPlayerIsReadyAsync(roomId, Context.ConnectionId);
+    }
+
+    public async Task<Dictionary<string, GameObject>> GetGameObjects(Guid roomId)
+    {
+        var roomState = (await roomsDictionary.UnsafeGetRoomStateAsync(roomId)) ?? throw new InvalidOperationException($"Room with id {roomId} not found");
         if (roomState.GameObjectsDictionary == null || roomState.GameObjectsDictionary.Count != 3)
         {
             // Aggiungo solo i mancanti se sono qui
-            roomGamesManager.InitializeGameObjectsOnServer(roomId, false);
+            roomState = await roomGamesManager.InitializeGameObjectsOnServer(roomId, false);
         }
 
-        return roomGamesManager.RoomsDictionary?[roomId]!.GameObjectsDictionary!;
+        return roomState.GameObjectsDictionary!;
     }
 
     public override Task OnConnectedAsync()
@@ -69,24 +62,23 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
     {
         var room = await pongDbContext.Rooms.Include(x => x.Clients).FirstOrDefaultAsync(x => x.Id == roomId, Context.ConnectionAborted) ?? throw new InvalidOperationException($"Room with id {roomId} not found");
         // This will need to change to be based on nickname or something else, not on connection id
-        Role result;
-        var roomstate = roomGamesManager.RoomsDictionary[roomId];
+        Role role;
+        var roomstate = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
         switch (room.Clients.Count)
         {
             case 0:
-                result = Role.Player1;
-                roomstate.Player1ConnectionId = Context.ConnectionId;
+                role = Role.Player1;
                 break;
             case 1:
-                result = Role.Player2;
-                roomstate.Player2ConnectionId = Context.ConnectionId;
+                role = Role.Player2;
                 break;
             default:
-                result = Role.Spectator;
+                role = Role.Spectator;
                 break;
         }
+        await roomGamesManager.SetPlayerConnectionIdAsync(roomstate, role, Context.ConnectionId);
 
-        room.Clients.Add(new EFCore.Client { ConnectionId = Context.ConnectionId, Role = (byte)result, Username = userName, RoomId = roomId });
+        room.Clients.Add(new EFCore.Client { ConnectionId = Context.ConnectionId, Role = (byte)role, Username = userName, RoomId = roomId });
 
         await pongDbContext.SaveChangesAsync();
         var roomIdAsString = roomId.ToString();
@@ -94,8 +86,8 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
         // TODO - This will be implemented as a notification with the name of whoever connected
         //await Clients.Group(roomIdAsString).SendAsync(UpdateRoomMethod, room);
 
-        logger.LogInformation($"Room {roomId} joined by {userName} as {result}");
-        return result;
+        logger.LogInformation($"Room {roomId} joined by {userName} as {role}");
+        return role;
     }
 
     public async Task LeaveRoom(Guid roomId)
@@ -120,20 +112,20 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
     {
         var client = room.Clients.Single(x => x.ConnectionId == Context.ConnectionId);
         room.Clients.Remove(client);
-        var roomState = roomGamesManager.RoomsDictionary[room.Id];
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(room.Id);
 
         if (client.Role == (byte)Role.Player1)
         {
             if (roomState.MustPlayGame)
             {
-                roomGamesManager.Player1Disconnected(room.Id);
+                await roomGamesManager.Player1Disconnected(room.Id);
             }
         }
         else if (client.Role == (byte)Role.Player2)
         {
             if (roomState.MustPlayGame)
             {
-                roomGamesManager.Player2Disconnected(room.Id);
+                await roomGamesManager.Player2Disconnected(room.Id);
             }
         }
 

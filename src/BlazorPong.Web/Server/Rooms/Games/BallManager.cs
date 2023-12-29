@@ -3,34 +3,32 @@ using BlazorPong.Web.Shared;
 
 namespace BlazorPong.Web.Server.Rooms.Games;
 
-public class BallManager
+public class BallManager(ILogger<BallManager> logger)
 {
     private readonly StringBuilder _stringBuilder = new();
-    private readonly ILogger<BallManager> _logger;
+    private int _angleValue;
 
-    private int _angle;
-    private CollisionItem _lastCollisionItem;
-
-    public BallManager(ILogger<BallManager> logger)
+    private int _angle
     {
-        _logger = logger;
-        var next = Random.Shared.Next(1, 5);
-        switch (next)
+        get
         {
-            case 1:
-                _angle = 45;
-                break;
-            case 2:
-                _angle = 135;
-                break;
-            case 3:
-                _angle = 225;
-                break;
-            case 4:
-                _angle = 315;
-                break;
+            if (_angleValue == 0)
+            {
+                _angleValue = Random.Shared.Next(1, 5) switch
+                {
+                    1 => 45,
+                    2 => 135,
+                    3 => 225,
+                    4 => 315,
+                    _ => throw new InvalidOperationException("Random number is not between 1 and 4")
+                };
+            }
+            return _angleValue;
         }
+        set => _angleValue = value;
     }
+
+    private CollisionItem _lastCollisionItem;
 
     public bool VerifyObjectsCollision(GameObject gameObjectA, GameObject gameObjectB)
     {
@@ -56,7 +54,7 @@ public class BallManager
                             .AppendLine($"aLeft: {aLeft}, aTop: {aTop}, aWidth: {aWidth}, aHeight: {aHeight}")
                             .AppendLine($"bLeft: {bLeft}, bTop: {bTop}, bWidth: {bWidth}, bHeight: {bHeight}")
                             .ToString();
-            _logger.LogDebug(debugMsg);
+            logger.LogDebug(debugMsg);
         }
 
         return result;
@@ -113,7 +111,8 @@ public class BallManager
         ball = ball! with
         {
             LastUpdatedBy = "server",
-            LastTickServerReceivedUpdate = currentTicks,
+            LastTickConnectedServerReceivedUpdate = currentTicks,
+            LastSinglaRServerReceivedUpdateName = Environment.MachineName,
             LastUpdateTicks = currentTicks + 1,// the ball always needs to be re-rendered when received from the server
             Left = ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
             Top = ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
