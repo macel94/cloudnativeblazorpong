@@ -41,7 +41,15 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
                     Height: 3)
                 {
                     Left=50,
-                    Top=50
+                    Top=50,
+                    Angle = Random.Shared.Next(1, 5) switch
+                    {
+                        1 => 45,
+                        2 => 135,
+                        3 => 225,
+                        4 => 315,
+                        _ => throw new InvalidOperationException("Random number is not between 1 and 4")
+                    }
                 }
             }
         };
@@ -173,19 +181,18 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
 
         var ball = roomState.GameObjectsDictionary["ball"];
         var res = ballManager!.Update(ref ball!);
-        // TODO - Understand if this is necessary, ignored during refactoring
-        roomState.GameObjectsDictionary["ball"] = ball;
-        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
 
         // Verify collisions between player1 and ball
         if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary["player1"]!))
         {
-            ballManager.OnPlayer1Hit();
+            ballManager.OnPlayer1Hit(ref ball);
         }
         else if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary["player2"]!))
         {
-            ballManager.OnPlayer2Hit();
+            ballManager.OnPlayer2Hit(ref ball);
         }
+        roomState.GameObjectsDictionary["ball"] = ball;
+        await roomsDictionary.SetRoomStateAsync(roomId, roomState);
 
         return res;
     }
@@ -247,16 +254,16 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
 
     internal async Task SetPlayerConnectionIdAsync(RoomState roomstate, Role role, string connectionId)
     {
-        if(role == Role.Spectator)
+        if (role == Role.Spectator)
         {
             return;
         }
 
-        if(role == Role.Player1)
+        if (role == Role.Player1)
         {
             roomstate.Player1ConnectionId = connectionId;
         }
-        else if(role == Role.Player2)
+        else if (role == Role.Player2)
         {
             roomstate.Player2ConnectionId = connectionId;
         }

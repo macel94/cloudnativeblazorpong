@@ -38,7 +38,7 @@ public class BallManager(ILogger<BallManager> logger)
         return result;
     }
 
-    private string HandleCollisions(GameObject ball)
+    private string HandleCollisions(ref GameObject ball)
     {
         if (ball!.Left <= GameConstants.LeftBounds)
         {
@@ -55,32 +55,32 @@ public class BallManager(ILogger<BallManager> logger)
             ball.Top >= GameConstants.TopBounds)
         {
             _lastCollisionItem = CollisionItem.Wall;
-            HandleHorizontalWallCollision();
+            HandleHorizontalWallCollision(ref ball);
         }
 
         return string.Empty;
     }
 
-    private void HandleVerticalWallCollision()
+    public static void HandleVerticalWallCollision(ref GameObject ball)
     {
         // Angle needs to be in the roomstate and shared between servers
-        switch (_angle)
+        switch (ball.Angle)
         {
-            case 45: _angle = 135; break;
-            case 135: _angle = 45; break;
-            case 225: _angle = 315; break;
-            case 315: _angle = 225; break;
+            case 45: ball.Angle = 135; break;
+            case 135: ball.Angle = 45; break;
+            case 225: ball.Angle = 315; break;
+            case 315: ball.Angle = 225; break;
         }
     }
 
-    private void HandleHorizontalWallCollision()
+    private void HandleHorizontalWallCollision(ref GameObject ball)
     {
-        switch (_angle)
+        switch (ball.Angle)
         {
-            case 45: _angle = 315; break;
-            case 135: _angle = 225; break;
-            case 225: _angle = 135; break;
-            case 315: _angle = 45; break;
+            case 45: ball.Angle = 315; break;
+            case 135: ball.Angle = 225; break;
+            case 225: ball.Angle = 135; break;
+            case 315: ball.Angle = 45; break;
         }
     }
 
@@ -93,28 +93,28 @@ public class BallManager(ILogger<BallManager> logger)
             LastTickConnectedServerReceivedUpdate = currentTicks,
             LastSinglaRServerReceivedUpdateName = Environment.MachineName,
             LastUpdateTicks = currentTicks + 1,// the ball always needs to be re-rendered when received from the server
-            Left = ball.Left + Math.Cos(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
-            Top = ball.Top + Math.Sin(_angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
+            Left = ball.Left + Math.Cos(ball.Angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
+            Top = ball.Top + Math.Sin(ball.Angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
         };
 
-        return HandleCollisions(ball);
+        return HandleCollisions(ref ball);
     }
 
-    public void OnPlayer1Hit()
+    public void OnPlayer1Hit(ref GameObject ball)
     {
         if (_lastCollisionItem == CollisionItem.Player1)
             return;
 
-        HandleVerticalWallCollision();
+        HandleVerticalWallCollision(ref ball);
         _lastCollisionItem = CollisionItem.Player1;
     }
 
-    public void OnPlayer2Hit()
+    public void OnPlayer2Hit(ref GameObject ball)
     {
         if (_lastCollisionItem == CollisionItem.Player2)
             return;
 
-        HandleVerticalWallCollision();
+        HandleVerticalWallCollision(ref ball);
         _lastCollisionItem = CollisionItem.Player2;
     }
 }

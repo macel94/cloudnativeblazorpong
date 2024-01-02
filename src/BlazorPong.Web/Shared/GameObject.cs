@@ -9,6 +9,8 @@ public record GameObject(string Id, string LastUpdatedBy, double Width, double H
     public long LastTickConnectedServerReceivedUpdate { get; set; }
     public string? LastSinglaRServerReceivedUpdateName { get; set; }
     public bool WasUpdated => LastUpdateTicks > LastTickClientKnowsServerReceivedUpdate;
+    public int Angle { get; set; }
+
     public string ToStyle()
     {
         var culture = System.Globalization.CultureInfo.InvariantCulture;
