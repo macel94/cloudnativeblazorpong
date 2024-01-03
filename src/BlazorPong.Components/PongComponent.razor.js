@@ -9,7 +9,7 @@ export function unsetOnbeforeunload(instance) {
 };
 
 export function log(message) {
-    console.log(message);
+    console.debug(message);
 };
 
 export function getContainerHeight() {

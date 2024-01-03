@@ -63,12 +63,12 @@
 <div id="gamearea">
     @if (Ball != null && Player1 != null && Player2 != null)
     {
-        <div id="@(GameConstants.BallRoleAsString)" style="@Ball.ToStyle()" />
-        <div id="@(GameConstants.Player1RoleAsString)" draggable=@Player1.Draggable
+        <div id="@(GameConstants.BallRoleAsString.ToLower())" style="@Ball.ToStyle()" />
+        <div id="@(GameConstants.Player1RoleAsString.ToLower())" draggable=@Player1.Draggable
              @ondragstart="@(e => SetInitialMouseOffset(e, Player1))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player1))"
              style="@Player1.ToStyle()" />
-        <div id="@(GameConstants.Player2RoleAsString)" draggable=@Player2.Draggable
+        <div id="@(GameConstants.Player2RoleAsString.ToLower())" draggable=@Player2.Draggable
              @ondragstart="@(e => SetInitialMouseOffset(e, Player2))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player2))"
              style="@Player2.ToStyle()" />
@@ -265,8 +265,7 @@
         }
         catch (Exception ex)
         {
-            // TODO: handle exceptions
-            Console.WriteLine(ex);
+            await LogOnClientAsync(ex.ToString());
         }
     }
 
