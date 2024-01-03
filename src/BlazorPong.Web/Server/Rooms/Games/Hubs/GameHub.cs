@@ -53,7 +53,7 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
         logger.LogInformation($"Room {roomId} opened");
 
         // Wait for a server to pick up the room so that we find the room in the dictionary of states when we join
-        await Task.Delay(GameConstants.RoomCheckDelayBetweenTicksInMs);
+        await Task.Delay(GameConstants.RoomCheckDelayInMs);
 
         return await JoinRoom(roomId, userName);
     }

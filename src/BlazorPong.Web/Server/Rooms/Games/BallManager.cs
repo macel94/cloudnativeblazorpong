@@ -1,9 +1,10 @@
 ﻿using System.Text;
 using BlazorPong.Web.Shared;
+using BlazorPong.Web.Shared.Clock;
 
 namespace BlazorPong.Web.Server.Rooms.Games;
 
-public class BallManager(ILogger<BallManager> logger)
+public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock)
 {
     private readonly StringBuilder _stringBuilder = new();
     private CollisionItem _lastCollisionItem;
@@ -86,15 +87,28 @@ public class BallManager(ILogger<BallManager> logger)
 
     public string Update(ref GameObject ball)
     {
-        var currentTicks = DateTimeOffset.UtcNow.Ticks;
+        var currentMilliseconds = systemClock.UtcNow.ToUnixTimeMilliseconds();
+        long lastUpdateMilliseconds = ball.LastUpdate > 0 ? ball.LastUpdate : currentMilliseconds;
+
+        // Convert ticks to milliseconds
+        long millisecondsSinceLastUpdate = currentMilliseconds - lastUpdateMilliseconds;
+
+        // Calculate how many updates should have occurred in this time frame
+        double updatesCount = millisecondsSinceLastUpdate / GameConstants.GameDelayBetweenTicksInMs;
+
+        // Update the position based on the number of elapsed updates
+        double distanceToMove = updatesCount * GameConstants.SpeedPerTick;
+        double angleInRadians = ball.Angle * GameConstants.DegreeToRadians;
+        var leftMovement = Math.Cos(angleInRadians) * distanceToMove;
+        var topMovement = Math.Sin(angleInRadians) * distanceToMove;
         ball = ball! with
         {
             LastUpdatedBy = "server",
-            LastTickConnectedServerReceivedUpdate = currentTicks,
+            LastTimeServerReceivedUpdate = currentMilliseconds,
             LastSinglaRServerReceivedUpdateName = Environment.MachineName,
-            LastUpdateTicks = currentTicks + 1,// the ball always needs to be re-rendered when received from the server
-            Left = ball.Left + Math.Cos(ball.Angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick,
-            Top = ball.Top + Math.Sin(ball.Angle * GameConstants.DegreeToRadians) * GameConstants.SpeedPerTick
+            LastUpdate = currentMilliseconds + 1,// the ball always needs to be re-rendered when received from the server
+            Left = ball.Left + leftMovement,
+            Top = ball.Top + topMovement
         };
 
         return HandleCollisions(ref ball);

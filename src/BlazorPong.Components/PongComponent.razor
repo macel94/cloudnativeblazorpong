@@ -1,4 +1,5 @@
 ﻿@using BlazorPong.Web.Shared;
+@using BlazorPong.Web.Shared.Clock
 @using Microsoft.AspNetCore.Http.Connections;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Microsoft.JSInterop;
@@ -77,15 +78,16 @@
 @code {
     [Parameter, EditorRequired]
     public Guid? RoomId { get; set; }
-    private string tempRoomId = string.Empty;
-
     [Parameter, EditorRequired]
     public string GameHubEndpoint { get; set; } = default!;
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
     [Inject]
     public IJSRuntime JsRuntime { get; set; } = default!;
+    [Inject]
+    public ISystemClock SystemClock { get; set; } = default!;
     private HubConnection? Connection;
+    private string tempRoomId = string.Empty;
 
     // Generate random username for now, in the future will be chosen by the user
     private string username = $"user_{Guid.NewGuid()}";
@@ -248,7 +250,7 @@
         GameObjectsDict[go.Id] = go with
             {
                 Top = nextTop,
-                LastUpdateTicks = DateTimeOffset.UtcNow.Ticks
+                LastUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds()
             };
 
         StateHasChanged();
@@ -283,7 +285,7 @@
                 await Connection!.SendAsync("UpdateGameObjectPosition", RoomId, go);
                 GameObjectsDict[go.Id] = go with
                     {
-                        LastTickClientKnowsServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks
+                        LastTickClientKnowsServerReceivedUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds()
                     };
             }
         }
@@ -297,7 +299,7 @@
         // Infine setto i draggable che non dipendono dal server
         foreach (var kvpair in GameObjectsDict)
         {
-            kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString().ToLower());
+            kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString()!.ToLower());
         }
     }
 
@@ -308,7 +310,7 @@
             GameMessage = "Game started!";
         }
 
-        if (GameObjectsDict.TryGetValue(updatedObj.Id, out var foundObj))
+        if (GameObjectsDict.TryGetValue(updatedObj!.Id, out var foundObj))
         {
             foundObj!.Top = updatedObj.Top;
             foundObj.Left = updatedObj.Left;
@@ -342,18 +344,18 @@
 
     private Task SetOnbeforeunload()
     {
-        return module.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
+        return module!.InvokeAsync<object>("setOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
     }
 
     private Task UnsetOnbeforeunload()
     {
-        return module.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
+        return module!.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
     }
 
     private Task LogOnClientAsync(string message)
     {
         // Refactor per usare lo standard ILogger anzichè sta robaccia
-        return module.InvokeAsync<object>("log", message).AsTask();
+        return module!.InvokeAsync<object>("log", message).AsTask();
     }
 
     /// <summary>

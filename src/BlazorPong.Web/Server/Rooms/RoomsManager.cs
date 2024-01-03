@@ -1,11 +1,16 @@
 ﻿using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Server.Rooms.Games;
 using BlazorPong.Web.Shared;
+using BlazorPong.Web.Shared.Clock;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlazorPong.Web.Server.Rooms;
 
-public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, RedisRoomStateCache roomsDictionary, ILogger<RoomsManager> logger)
+public class RoomsManager(BallManager ballManager,
+                          PongDbContext pongDbContext,
+                          RedisRoomStateCache roomsDictionary,
+                          ILogger<RoomsManager> logger,
+                          ISystemClock systemClock)
 {
     public async Task<RoomState> InitializeGameObjectsOnServer(Guid roomId, bool forceInitialization)
     {
@@ -87,8 +92,8 @@ public class RoomsManager(BallManager ballManager, PongDbContext pongDbContext, 
                 Left = clientUpdatedObject.Left,
                 Top = clientUpdatedObject.Top,
                 LastUpdatedBy = clientUpdatedObject.LastUpdatedBy,
-                LastUpdateTicks = clientUpdatedObject.LastUpdateTicks,
-                LastTickConnectedServerReceivedUpdate = DateTimeOffset.UtcNow.Ticks,
+                LastUpdate = clientUpdatedObject.LastUpdate,
+                LastTimeServerReceivedUpdate = systemClock.UtcNow.ToUnixTimeMilliseconds(),
                 LastSinglaRServerReceivedUpdateName = Environment.MachineName
             };
 

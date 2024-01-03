@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using BlazorPong.Web.Server.Cache;
 using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Server.Rooms;
 using Microsoft.EntityFrameworkCore;
@@ -9,18 +10,17 @@ public static class WebApplicationBuilderExtensions
     public static void AddRedis(this WebApplicationBuilder builder)
     {
         var redisCs = builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis CS is missing");
-        var prjName = Assembly.GetExecutingAssembly().GetName().Name;
         builder.Services.AddSignalR()
             .AddStackExchangeRedis(redisCs,
             options =>
             {
-                options.Configuration.ChannelPrefix = prjName!;
+                options.Configuration.ChannelPrefix = CacheConstants.ChannelPrefixLiteral;
             }
         );
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = redisCs;
-            options.InstanceName = prjName;
+            options.InstanceName = CacheConstants.ChannelPrefix;
         });
         var _redis = ConnectionMultiplexer.Connect(redisCs);
         var server = _redis.GetServer(_redis.GetEndPoints().First());

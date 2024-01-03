@@ -1,5 +1,5 @@
-﻿using System.Reflection;
-using System.Text.Json;
+﻿using System.Text.Json;
+using BlazorPong.Web.Server.Cache;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 
@@ -9,18 +9,16 @@ public class RedisRoomStateCache(IDistributedCache cache, IServer redisServer, I
 {
     private readonly IDistributedCache _cache = cache;
     private readonly TimeSpan _expiration = TimeSpan.FromMinutes(10); // Example expiration time
-    private static readonly string ChannelPrefix = Assembly.GetExecutingAssembly().GetName().Name!;
-    private const string _roomPrefix = "room-";
 
     // Get the list of keys of rooms in Redis
     public List<Guid> GetRoomKeys()
     {
         // Only for this type of low level search we also need to add channelprefix
-        var keys = redisServer.Keys(redisDatabase.Database, $"{ChannelPrefix}{_roomPrefix}*").Select(x =>
+        var keys = redisServer.Keys(redisDatabase.Database, CacheConstants.RoomKeysSearchValue).Select(x =>
         {
             var key = x.ToString();
             // And here we need to remove it
-            var res = RevertToActualKey(key.Replace(ChannelPrefix, ""));
+            var res = RevertToActualKey(key.Replace(CacheConstants.ChannelPrefix, ""));
             return res;
         }).ToList();
         return keys;
@@ -45,16 +43,11 @@ public class RedisRoomStateCache(IDistributedCache cache, IServer redisServer, I
 
     private static string GetActualKey(Guid roomId)
     {
-        return $"{_roomPrefix}{roomId}";
-    }
-
-    private static Guid RemoveChannelPrefix(string key)
-    {
-        return Guid.Parse(key.Replace(_roomPrefix, ""));
+        return $"{CacheConstants.RoomPrefix}{roomId}";
     }
 
     private static Guid RevertToActualKey(string key)
     {
-        return Guid.Parse(key.Replace(_roomPrefix, ""));
+        return Guid.Parse(key.Replace(CacheConstants.RoomPrefix, ""));
     }
 }
