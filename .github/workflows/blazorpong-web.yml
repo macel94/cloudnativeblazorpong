@@ -25,8 +25,8 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v2
       with:
-        context: .
-        file: ./src/BlazorPong.Web/Server/Dockerfile
+        context: ./src
+        file: ./BlazorPong.Web/Server/Dockerfile
         push: true
         tags: |
           ghcr.io/${{ github.repository }}/blazorpong:latest
