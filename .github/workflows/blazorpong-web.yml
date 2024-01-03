@@ -26,5 +26,6 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: ./src/BlazorPong.Web/
+        file: ./src/BlazorPong.Web/Server/Dockerfile
         push: true
         tags: ghcr.io/${{ github.repository }}/blazorpong:latest
