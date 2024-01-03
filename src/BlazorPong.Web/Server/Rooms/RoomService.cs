@@ -1,4 +1,4 @@
-﻿using BlazorPong.Web.Server.Rooms.Games;
+﻿using BlazorPong.Web.Shared;
 
 namespace BlazorPong.Web.Server.Rooms;
 

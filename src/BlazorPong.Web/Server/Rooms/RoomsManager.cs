@@ -17,8 +17,8 @@ public class RoomsManager(BallManager ballManager,
         Dictionary<string, GameObject> tempInitGameObjects = new()
         {
             {
-                "player1",
-                new(Id: "player1",
+                GameConstants.Player1RoleAsString,
+                new(Id: GameConstants.Player1RoleAsString,
                     LastUpdatedBy: string.Empty,
                     Width : 2,
                     Height : 9)
@@ -28,8 +28,8 @@ public class RoomsManager(BallManager ballManager,
                 }
             },
             {
-                "player2",
-                new(Id : "player2",
+                GameConstants.Player2RoleAsString,
+                new(Id : GameConstants.Player2RoleAsString,
                     LastUpdatedBy: string.Empty,
                     Width: 2,
                     Height: 9)
@@ -39,8 +39,8 @@ public class RoomsManager(BallManager ballManager,
                 }
             },
             {
-                "ball",
-                new(Id : "ball",
+                GameConstants.BallRoleAsString,
+                new(Id : GameConstants.BallRoleAsString,
                     LastUpdatedBy: string.Empty,
                     Width: 1.5,
                     Height: 3)
@@ -184,19 +184,19 @@ public class RoomsManager(BallManager ballManager,
     {
         var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
-        var ball = roomState.GameObjectsDictionary["ball"];
+        var ball = roomState.GameObjectsDictionary[GameConstants.BallRoleAsString];
         var res = ballManager!.Update(ref ball!);
 
         // Verify collisions between player1 and ball
-        if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary["player1"]!))
+        if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary[GameConstants.Player1RoleAsString]!))
         {
             ballManager.OnPlayer1Hit(ref ball);
         }
-        else if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary["player2"]!))
+        else if (ballManager.VerifyObjectsCollision(ball!, roomState.GameObjectsDictionary[GameConstants.Player2RoleAsString]!))
         {
             ballManager.OnPlayer2Hit(ref ball);
         }
-        roomState.GameObjectsDictionary["ball"] = ball;
+        roomState.GameObjectsDictionary[GameConstants.BallRoleAsString] = ball;
         await roomsDictionary.SetRoomStateAsync(roomId, roomState);
 
         return res;
@@ -257,18 +257,18 @@ public class RoomsManager(BallManager ballManager,
         await roomsDictionary.SetRoomStateAsync(roomId, roomstate);
     }
 
-    internal async Task SetPlayerConnectionIdAsync(RoomState roomstate, Role role, string connectionId)
+    internal async Task SetPlayerConnectionIdAsync(RoomState roomstate, Roles role, string connectionId)
     {
-        if (role == Role.Spectator)
+        if (role == Roles.Spectator)
         {
             return;
         }
 
-        if (role == Role.Player1)
+        if (role == Roles.Player1)
         {
             roomstate.Player1ConnectionId = connectionId;
         }
-        else if (role == Role.Player2)
+        else if (role == Roles.Player2)
         {
             roomstate.Player2ConnectionId = connectionId;
         }

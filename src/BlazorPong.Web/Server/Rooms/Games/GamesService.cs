@@ -119,17 +119,17 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
     private static async Task ManagePlayerPoint(IHubContext<GameHub, IBlazorPongClient> hub, RoomsManager roomGameManager, RoomState roomState, string pointPlayerName, CancellationToken cancellationToken)
     {
         int playerPoints;
-        Role playerType;
+        Roles playerType;
         // Altrimenti aggiungo il punto e resetto il tutto
-        if (pointPlayerName.Equals("player1"))
+        if (pointPlayerName.Equals(GameConstants.Player1RoleAsString))
         {
             playerPoints = await roomGameManager.AddPlayer1Point(roomState.RoomId);
-            playerType = Role.Player1;
+            playerType = Roles.Player1;
         }
         else
         {
             playerPoints = await roomGameManager.AddPlayer2Point(roomState.RoomId);
-            playerType = Role.Player2;
+            playerType = Roles.Player2;
         }
 
         await hub.Clients.Group(roomState.RoomId.ToString()).UpdatePlayerPoints(playerType, playerPoints);
@@ -150,7 +150,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
             kvPair.Value!.LastSinglaRServerReceivedUpdateName = Environment.MachineName;
 
             // Se so chi ha fatto l'update evito di mandarglielo
-            if (kvPair.Value.LastUpdatedBy != null && !kvPair.Value.LastUpdatedBy.Equals("server"))
+            if (kvPair.Value.LastUpdatedBy != null && !kvPair.Value.LastUpdatedBy.Equals(GameConstants.ServerRoleAsString))
             {
                 await hub.Clients.GroupExcept(roomState.RoomId.ToString(), kvPair.Value.LastUpdatedBy).UpdateGameObjectPositionOnClient(kvPair.Value);
             }

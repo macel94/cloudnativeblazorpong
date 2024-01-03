@@ -40,7 +40,7 @@
             {
                 <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
             }
-            @if (_playerType != Role.Spectator && GameMessage == null)
+            @if (_playerType != Roles.Spectator && GameMessage == null)
             {
                 <button type="button" @onclick="SetPlayerIsReady" class="btn btn-success col" style="height:5%">Play</button>
             }
@@ -63,12 +63,12 @@
 <div id="gamearea">
     @if (Ball != null && Player1 != null && Player2 != null)
     {
-        <div id="ball" style="@Ball.ToStyle()" />
-        <div id="player1" draggable=@Player1.Draggable
+        <div id="@(GameConstants.BallRoleAsString)" style="@Ball.ToStyle()" />
+        <div id="@(GameConstants.Player1RoleAsString)" draggable=@Player1.Draggable
              @ondragstart="@(e => SetInitialMouseOffset(e, Player1))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player1))"
              style="@Player1.ToStyle()" />
-        <div id="player2" draggable=@Player2.Draggable
+        <div id="@(GameConstants.Player2RoleAsString)" draggable=@Player2.Draggable
              @ondragstart="@(e => SetInitialMouseOffset(e, Player2))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player2))"
              style="@Player2.ToStyle()" />
@@ -96,27 +96,27 @@
     private StringBuilder sb = new StringBuilder();
     private GameObject? Ball
     {
-        get => GameObjectsDict.GetValueOrDefault("ball", null);
-        set => GameObjectsDict["ball"] = value;
+        get => GameObjectsDict.GetValueOrDefault(GameConstants.BallRoleAsString, null);
+        set => GameObjectsDict[GameConstants.BallRoleAsString] = value;
     }
 
     private GameObject? Player1
     {
-        get => GameObjectsDict.GetValueOrDefault("player1", null);
-        set => GameObjectsDict["player1"] = value;
+        get => GameObjectsDict.GetValueOrDefault(GameConstants.Player1RoleAsString, null);
+        set => GameObjectsDict[GameConstants.Player1RoleAsString] = value;
     }
 
     private GameObject? Player2
     {
-        get => GameObjectsDict.GetValueOrDefault("player2", null);
-        set => GameObjectsDict["player2"] = value;
+        get => GameObjectsDict.GetValueOrDefault(GameConstants.Player2RoleAsString, null);
+        set => GameObjectsDict[GameConstants.Player2RoleAsString] = value;
     }
 
     protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new()
     {{nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
         {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
         {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}};
-    protected Role? _playerType = null;
+    protected Roles? _playerType = null;
     private double _mouseOffset = 0;
     private double _containerTopOffset = 0;
     protected int Player1Points;
@@ -171,7 +171,7 @@
         .Build();
 
         Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
-        Connection.On<Role, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
+        Connection.On<Roles, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
         Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
 
         await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
@@ -201,15 +201,15 @@
         StateHasChanged();
     }
 
-    private Task UpdatePlayerPoints(Role clientType, int points)
+    private Task UpdatePlayerPoints(Roles clientType, int points)
     {
         switch (clientType)
         {
-            case Role.Player1:
+            case Roles.Player1:
                 Player1Points = points;
                 GameMessage = "Player1 just made a point!";
                 break;
-            case Role.Player2:
+            case Roles.Player2:
                 Player2Points = points;
                 GameMessage = "Player2 just made a point!";
                 break;
@@ -272,7 +272,7 @@
 
     private async Task UpdateChangedGameObjectsPositionsOnServer()
     {
-        if (_playerType == Role.Spectator)
+        if (_playerType == Roles.Spectator)
         {
             return;
         }
@@ -299,7 +299,7 @@
         // Infine setto i draggable che non dipendono dal server
         foreach (var kvpair in GameObjectsDict)
         {
-            kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString()!.ToLower());
+            kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString());
         }
     }
 
@@ -389,7 +389,7 @@
         // Get what type of player the current user will be
         try
         {
-            _playerType = await Connection!.InvokeAsync<Role>("OpenRoom", RoomId, username);
+            _playerType = await Connection!.InvokeAsync<Roles>("OpenRoom", RoomId, username);
             await ManageEnteredPlayerTypeAssigned();
         }
         catch (Exception ex)
@@ -405,7 +405,7 @@
             RoomId = roomId;
             NavigationManager.NavigateTo($"/room/{RoomId}/pong");
             // Get what type of player the current user will be
-            _playerType = await Connection!.InvokeAsync<Role>("JoinRoom", RoomId, username);
+            _playerType = await Connection!.InvokeAsync<Roles>("JoinRoom", RoomId, username);
             await ManageEnteredPlayerTypeAssigned();
         }
         else

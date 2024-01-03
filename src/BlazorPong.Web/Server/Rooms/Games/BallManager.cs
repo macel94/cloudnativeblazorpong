@@ -43,14 +43,13 @@ public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock)
     {
         if (ball!.Left <= GameConstants.LeftBounds)
         {
-            return "player2";
+            return GameConstants.Player2RoleAsString;
         }
 
         if (ball.Left >= GameConstants.RightBounds)
         {
-            return "player1";
+            return GameConstants.Player1RoleAsString;
         }
-
 
         if (ball.Top <= GameConstants.BottomBounds ||
             ball.Top >= GameConstants.TopBounds)
@@ -103,7 +102,7 @@ public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock)
         var topMovement = Math.Sin(angleInRadians) * distanceToMove;
         ball = ball! with
         {
-            LastUpdatedBy = "server",
+            LastUpdatedBy = GameConstants.ServerRoleAsString,
             LastTimeServerReceivedUpdate = currentMilliseconds,
             LastSinglaRServerReceivedUpdateName = Environment.MachineName,
             LastUpdate = currentMilliseconds + 1,// the ball always needs to be re-rendered when received from the server

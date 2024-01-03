@@ -43,7 +43,7 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
         return base.OnConnectedAsync();
     }
 
-    public async Task<Role> OpenRoom(Guid roomId, string userName)
+    public async Task<Roles> OpenRoom(Guid roomId, string userName)
     {
         // Create this room in the db using dbContext
         pongDbContext.Rooms.Add(new Room { Id = roomId });
@@ -58,22 +58,22 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
         return await JoinRoom(roomId, userName);
     }
 
-    public async Task<Role> JoinRoom(Guid roomId, string userName)
+    public async Task<Roles> JoinRoom(Guid roomId, string userName)
     {
         var room = await pongDbContext.Rooms.Include(x => x.Clients).FirstOrDefaultAsync(x => x.Id == roomId, Context.ConnectionAborted) ?? throw new InvalidOperationException($"Room with id {roomId} not found");
         // This will need to change to be based on nickname or something else, not on connection id
-        Role role;
+        Roles role;
         var roomstate = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
         switch (room.Clients.Count)
         {
             case 0:
-                role = Role.Player1;
+                role = Roles.Player1;
                 break;
             case 1:
-                role = Role.Player2;
+                role = Roles.Player2;
                 break;
             default:
-                role = Role.Spectator;
+                role = Roles.Spectator;
                 break;
         }
         await roomGamesManager.SetPlayerConnectionIdAsync(roomstate, role, Context.ConnectionId);
@@ -114,14 +114,14 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
         room.Clients.Remove(client);
         var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(room.Id);
 
-        if (client.Role == (byte)Role.Player1)
+        if (client.Role == (byte)Roles.Player1)
         {
             if (roomState.MustPlayGame)
             {
                 await roomGamesManager.Player1Disconnected(room.Id);
             }
         }
-        else if (client.Role == (byte)Role.Player2)
+        else if (client.Role == (byte)Roles.Player2)
         {
             if (roomState.MustPlayGame)
             {
