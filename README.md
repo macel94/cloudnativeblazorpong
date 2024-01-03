@@ -4,29 +4,62 @@ Cloud Native Blazor Pong is a revival of the classic [BlazorPong](https://github
 
 # Architecture\Flow diagram
 
+This was generated using chatgpt, so it's not perfect, but it's a good start.
 ```mermaid
 sequenceDiagram
-    participant BlazorClient1 as Player 1 (Blazor WASM)
-    participant BlazorClient2 as Player 2 (Blazor WASM)
+    participant User as User
+    participant WebPage as /pong Web Page
+    participant Server as Server
+    participant Database as Azure SQL Database
     participant SignalRHub as SignalR Hub
-    participant BackgroundService as Background Service
-    participant NETBackend as .NET Backend
+    participant Redis as Redis (Cache & Backbone)
+    participant RoomService as Room Service
+    participant GamesService as Games Service
 
-    Note over BlazorClient1, BlazorClient2: Players connect to the website at /pong
-    BlazorClient1->>SignalRHub: Connects to SignalR
-    BlazorClient2->>SignalRHub: Connects to SignalR
-    SignalRHub->>NETBackend: Notify of new connections
-    NETBackend->>BackgroundService: Initialize game session
-    BackgroundService->>SignalRHub: Send game state updates
-    loop Game Loop
-        BlazorClient1->>SignalRHub: Send bar movements
-        BlazorClient2->>SignalRHub: Send bar movements
-        SignalRHub->>BackgroundService: Relay player actions
-        BackgroundService->>SignalRHub: Update ball position
-        SignalRHub->>BlazorClient1: Update game state
-        SignalRHub->>BlazorClient2: Update game state
+    User->>WebPage: Access /pong
+    WebPage->>User: Option to Create or Join Room
+
+    alt Generate Room
+        User->>Server: Create Room
+        Server->>Database: Persist Room
+        Database-->>Server: Acknowledge
+        Server->>Redis: Add Room to Managed Rooms
+        Server-->>User: Room Created (GUID)
+    else Join Room
+        User->>Server: Join Room (GUID)
+        Server->>Redis: Verify Room State
+        Redis-->>Server: Room State
+        Server-->>User: Join Room
     end
+
+    User->>Server: Mark as Ready
+    Server->>RoomService: Monitor Room States
+    RoomService-->>Server: Room Ready
+    Server->>SignalRHub: Wait for 2 Players Ready
+    SignalRHub-->>User: Game Starts on Ready
+
+    loop Game Play
+        SignalRHub->>GamesService: Player Moves & Ball Updates
+        GamesService->>Redis: Update Room State
+        Redis-->>GamesService: State Updated
+        GamesService->>SignalRHub: Update Game State
+        SignalRHub-->>User: Reflect Player and Ball Movements
+    end
+
+    note over SignalRHub: Uses Redis for Scaling & State Management
 ```
+
+Prompt: generate a mermaidjs that represents the flow of this project.
+
+it should include that:
+the frontend is distributed from the backend server at the first get, and it's a blazor webassembly frontend.
+when the users lands on the /pong page, they can generate or join a room though a guid.
+when someone generates a room it is persisted in an azure sql database.
+one of the many backend servers then picks up the new room through a background service(RoomService) that polls the azure sql db and adds it to the in-memory dictionary that the GamesService is based on.
+Another background service(GamesService) managed the rooms locked for each backend waiting for 2 players to click on the ready button when they are in that room(that information is in the state of the room and is persisted on the redis cache).
+then though a signalr connection, both the player can move their block up and down while the background service sends periodically the ball movements, so that they can play and eventually score and win.
+
+horizontal scaling of backend servers that serve the frontend and contain the signalr hub and background services is guaranteed using redis as the backbone and also as the distributed cache for the state of each room.
 
 # Prerequisites
 
