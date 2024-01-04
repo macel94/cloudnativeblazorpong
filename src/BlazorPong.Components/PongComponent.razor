@@ -189,7 +189,7 @@
         StateHasChanged();
 
         // Lascio che l'utente veda il messaggio finale
-        await Task.Delay(10000);
+        await Task.Delay(GameConstants.DelayAfterResetInMs);
 
         // Lo resetto a null per mostrare il pulsante play
         GameMessage = null;
@@ -357,10 +357,7 @@
         return module!.InvokeAsync<object>("log", message).AsTask();
     }
 
-    /// <summary>
-    /// Metodo invocato con cui forzo il dispose in fase di chiusura dell'applicazione
-    /// </summary>
-    /// <returns></returns>
+    // DO NOT DELETE - This is called on dispose by js
     [JSInvokable]
     public Task DisposePongComponent()
     {

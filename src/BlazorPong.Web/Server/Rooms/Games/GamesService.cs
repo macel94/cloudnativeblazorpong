@@ -133,10 +133,9 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
         }
 
         await hub.Clients.Group(roomState.RoomId.ToString()).UpdatePlayerPoints(playerType, playerPoints);
-        // Da il tempo di visualizzare il messaggio del punto se il gioco non deve essere resettato
         if (!roomState.GameMustReset)
         {
-            await Task.Delay(3000, cancellationToken);
+            await Task.Delay(GameConstants.DelayAfterPointInMs, cancellationToken);
         }
     }
 
@@ -149,7 +148,6 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
             kvPair.Value!.LastTimeServerReceivedUpdate = systemClock.UtcNow.Ticks;
             kvPair.Value!.LastSinglaRServerReceivedUpdateName = Environment.MachineName;
 
-            // Se so chi ha fatto l'update evito di mandarglielo
             if (kvPair.Value.LastUpdatedBy != null && !kvPair.Value.LastUpdatedBy.Equals(GameConstants.ServerRoleAsString))
             {
                 await hub.Clients.GroupExcept(roomState.RoomId.ToString(), kvPair.Value.LastUpdatedBy).UpdateGameObjectPositionOnClient(kvPair.Value);

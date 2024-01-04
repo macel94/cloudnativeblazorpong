@@ -15,6 +15,8 @@ public static class GameConstants
     public const float SpeedPerTick = 1.3f;
     public const int GameDelayBetweenTicksInMs = 33;
 #endif
+    public const int DelayAfterPointInMs = 3000;
+    public const int DelayAfterResetInMs = 10000;
     public const int IdleDelayInMs = 10000;
     public const int RoomCheckDelayInMs = 10000;
     public static readonly string BallRoleAsString = Roles.Ball.ToString();
