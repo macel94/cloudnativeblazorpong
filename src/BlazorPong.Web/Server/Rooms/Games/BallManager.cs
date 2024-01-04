@@ -43,11 +43,13 @@ public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock)
     {
         if (ball!.Left <= GameConstants.LeftBounds)
         {
+            ball.LastUpdate = 0;
             return GameConstants.Player2RoleAsString;
         }
 
         if (ball.Left >= GameConstants.RightBounds)
         {
+            ball.LastUpdate = 0;
             return GameConstants.Player1RoleAsString;
         }
 
@@ -100,15 +102,14 @@ public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock)
         double angleInRadians = ball.Angle * GameConstants.DegreeToRadians;
         var leftMovement = Math.Cos(angleInRadians) * distanceToMove;
         var topMovement = Math.Sin(angleInRadians) * distanceToMove;
-        ball = ball! with
-        {
-            LastUpdatedBy = GameConstants.ServerRoleAsString,
-            LastTimeServerReceivedUpdate = currentMilliseconds,
-            LastSinglaRServerReceivedUpdateName = Environment.MachineName,
-            LastUpdate = currentMilliseconds + 1,// the ball always needs to be re-rendered when received from the server
-            Left = ball.Left + leftMovement,
-            Top = ball.Top + topMovement
-        };
+
+        ball.LastUpdatedBy = GameConstants.ServerRoleAsString;
+        ball.LastTimeServerReceivedUpdate = currentMilliseconds;
+        ball.LastSinglaRServerReceivedUpdateName = Environment.MachineName;
+        // the ball always needs to be re-rendered when received from the server
+        ball.LastUpdate = currentMilliseconds + 1;
+        ball.Left = ball.Left + leftMovement;
+        ball.Top = ball.Top + topMovement;
 
         return HandleCollisions(ref ball);
     }

@@ -149,6 +149,9 @@
             if (RoomId.HasValue)
             {
                 tempRoomId = RoomId.Value.ToString();
+                await ConnectToHub();
+                await JoinRoom();
+                StateHasChanged();
             }
         }
         await base.OnAfterRenderAsync(firstRender);
@@ -163,24 +166,31 @@
 
     public async Task ConnectToHub()
     {
-        await SetOnbeforeunload();
-        var endpoint = GameHubEndpoint;
-        Connection = new HubConnectionBuilder()
-        .WithUrl(endpoint, _connectionTypeChoice)
-        .WithAutomaticReconnect()
-        .Build();
+        try
+        {
+            await SetOnbeforeunload();
+            var endpoint = GameHubEndpoint;
+            Connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, _connectionTypeChoice)
+            .WithAutomaticReconnect()
+            .Build();
 
-        Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
-        Connection.On<Roles, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
-        Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
+            Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
+            Connection.On<Roles, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
+            Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
 
-        await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
 
-        await Connection.StartAsync();
+            await Connection.StartAsync();
 
-        await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
 
-        await LogOnClientAsync("ConnectionId: " + Connection.ConnectionId?.ToString());
+            await LogOnClientAsync("ConnectionId: " + Connection.ConnectionId?.ToString());
+        }
+        catch (Exception ex)
+        {
+            await LogOnClientAsync(ex.ToString());
+        }
     }
 
     private async void UpdateGameMessage(string serverMessage)
@@ -247,11 +257,8 @@
         .AppendLine($"MaxTop: {maxTop}");
         LogOnClientAsync(sb.ToString());
 
-        GameObjectsDict[go.Id] = go with
-            {
-                Top = nextTop,
-                LastUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds()
-            };
+        GameObjectsDict[go.Id]!.Top = nextTop;
+        GameObjectsDict[go.Id]!.LastUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds();
 
         StateHasChanged();
     }
@@ -290,7 +297,7 @@
         }
     }
 
-    private async void GetOrInitializeGameObjects()
+    private async Task GetOrInitializeGameObjects()
     {
         // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
         GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>("GetGameObjects", RoomId);
@@ -367,6 +374,7 @@
     public async Task SetPlayerIsReady()
     {
         await Connection!.SendAsync("SetPlayerIsReady", RoomId);
+        // TODO - Refactor the GameMessage so that it's always the server who sends them and client only receive and visualize them, no logic should be here
         GameMessage = "Waiting for the other player...";
         await InvokeAsync(StateHasChanged);
     }
@@ -417,7 +425,7 @@
 
         PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
 
-        GetOrInitializeGameObjects();
+        await GetOrInitializeGameObjects();
 
         await LogOnClientAsync("GameObjects initialization completed.");
 

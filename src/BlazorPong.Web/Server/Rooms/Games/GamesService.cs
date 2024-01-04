@@ -32,8 +32,12 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
                 logger.LogInformation("GamesService is running");
                 foreach (var roomKey in currentRoomKeys)
                 {
-                    // Start a task for new rooms
-                    if (!activeRoomTasks.ContainsKey(roomKey))
+                    var state = await roomsDictionary.UnsafeGetRoomStateAsync(roomKey);
+
+                    // Start a task for new rooms assigned to this server
+                    if (!activeRoomTasks.ContainsKey(roomKey) 
+                        && state?.ServerName != null
+                        && state.ServerName.Equals(Environment.MachineName))
                     {
                         var roomTask = ManageGameSafeAsync(hub, roomKey, roomGameManager, cancellationToken);
                         activeRoomTasks.Add(roomKey, roomTask);
@@ -44,6 +48,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
                 var completedTasks = activeRoomTasks.Where(kvPair => kvPair.Value.IsCompleted).ToList();
                 foreach (var completedTask in completedTasks)
                 {
+                    await roomGameManager.UnlockRoomAsync(completedTask.Key);
                     activeRoomTasks.Remove(completedTask.Key);
                     logger.LogInformation($"Room {completedTask.Key} task completed");
                 }
@@ -103,9 +108,10 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
             if (roomState.GameMustReset)
             {
                 logger.LogInformation($"Room {roomId} Game must reset");
+
                 var gameOverMessage = await roomGameManager.GetGameOverMessage(roomId);
                 await hub.Clients.Group(roomState.RoomId.ToString()).UpdateGameMessage(gameOverMessage);
-                // TODO - capire come gestire rematch
+                await roomGameManager.InitializeGameObjectsOnServer(roomId, true);
                 return;
             }
             else

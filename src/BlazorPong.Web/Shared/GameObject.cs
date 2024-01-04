@@ -1,6 +1,6 @@
 ﻿namespace BlazorPong.Web.Shared;
 
-public record GameObject(string Id, string LastUpdatedBy, double Width, double Height, long LastUpdate = 0)
+public record GameObject(string Id, double Width, double Height)
 {
     public double Left { get; set; }
     public double Top { get; set; }
@@ -8,6 +8,8 @@ public record GameObject(string Id, string LastUpdatedBy, double Width, double H
     public long LastTickClientKnowsServerReceivedUpdate { get; set; }
     public long LastTimeServerReceivedUpdate { get; set; }
     public string? LastSinglaRServerReceivedUpdateName { get; set; }
+    public long LastUpdate { get; set; }
+    public string? LastUpdatedBy { get; set; }
     public bool WasUpdated => LastUpdate > LastTickClientKnowsServerReceivedUpdate;
     public int Angle { get; set; }
 

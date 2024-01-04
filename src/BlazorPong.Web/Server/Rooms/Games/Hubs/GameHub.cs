@@ -12,7 +12,7 @@ public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext,
 {
     public async Task UpdateGameObjectPosition(Guid roomId, GameObject clientGameObject)
     {
-        clientGameObject = clientGameObject with { LastUpdatedBy = Context.ConnectionId };
+        clientGameObject.LastUpdatedBy = Context.ConnectionId;
         await roomGamesManager.UpdateGameObjectPositionOnServer(roomId, clientGameObject);
     }
 

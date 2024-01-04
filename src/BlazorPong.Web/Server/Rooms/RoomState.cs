@@ -13,6 +13,7 @@ public class RoomState
     public bool Player2Ready { get; set; }
     public int Player1Points { get; set; }
     public int Player2Points { get; set; }
+    public string? ServerName { get; set; }
 
     public bool MustPlayGame
     {

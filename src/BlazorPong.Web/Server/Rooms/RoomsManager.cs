@@ -19,18 +19,16 @@ public class RoomsManager(BallManager ballManager,
             {
                 GameConstants.Player1RoleAsString,
                 new(Id: GameConstants.Player1RoleAsString,
-                    LastUpdatedBy: string.Empty,
                     Width : 2,
                     Height : 9)
                 {
                     Left=10,
-                    Top=50
+                    Top=50,
                 }
             },
             {
                 GameConstants.Player2RoleAsString,
                 new(Id : GameConstants.Player2RoleAsString,
-                    LastUpdatedBy: string.Empty,
                     Width: 2,
                     Height: 9)
                 {
@@ -41,7 +39,6 @@ public class RoomsManager(BallManager ballManager,
             {
                 GameConstants.BallRoleAsString,
                 new(Id : GameConstants.BallRoleAsString,
-                    LastUpdatedBy: string.Empty,
                     Width: 1.5,
                     Height: 3)
                 {
@@ -87,15 +84,12 @@ public class RoomsManager(BallManager ballManager,
 
         if (gameObject != null)
         {
-            gameObject = gameObject with
-            {
-                Left = clientUpdatedObject.Left,
-                Top = clientUpdatedObject.Top,
-                LastUpdatedBy = clientUpdatedObject.LastUpdatedBy,
-                LastUpdate = clientUpdatedObject.LastUpdate,
-                LastTimeServerReceivedUpdate = systemClock.UtcNow.ToUnixTimeMilliseconds(),
-                LastSinglaRServerReceivedUpdateName = Environment.MachineName
-            };
+            gameObject.Left = clientUpdatedObject.Left;
+            gameObject.Top = clientUpdatedObject.Top;
+            gameObject.LastUpdatedBy = clientUpdatedObject.LastUpdatedBy;
+            gameObject.LastUpdate = clientUpdatedObject.LastUpdate;
+            gameObject.LastTimeServerReceivedUpdate = systemClock.UtcNow.ToUnixTimeMilliseconds();
+            gameObject.LastSinglaRServerReceivedUpdateName = Environment.MachineName;
 
             roomState.GameObjectsDictionary[clientUpdatedObject.Id] = gameObject;
             await roomsDictionary.SetRoomStateAsync(roomId, roomState);
@@ -204,8 +198,6 @@ public class RoomsManager(BallManager ballManager,
 
     internal async Task TryLockRoomAsync()
     {
-        //TODO Implement a service and don't directly use the cache here
-
         var room = await TryGetRoomWithoutServerAssignedAsync();
         if (room != null)
         {
@@ -220,6 +212,25 @@ public class RoomsManager(BallManager ballManager,
         //}
     }
 
+    internal async Task UnlockRoomAsync(Guid key)
+    {
+        var room = await pongDbContext.Rooms.FirstOrDefaultAsync(x => x.Id == key);
+        if (room != null)
+        {
+            room.ServerName = null;
+            await pongDbContext.SaveChangesAsync();
+
+            var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(room.Id);
+            roomState.ServerName = null;
+            await roomsDictionary.SetRoomStateAsync(room.Id, roomState);
+            logger.LogInformation("Room unlocked by server: {MachineName}", Environment.MachineName);
+        }
+        else
+        {
+            logger.LogWarning("Room {RoomId} not found when trying to unlock it", key);
+        }
+    }
+
     private async Task AssignCurrentServerToRoom(Room room)
     {
         // Update the room entity with the current server name
@@ -231,7 +242,8 @@ public class RoomsManager(BallManager ballManager,
         // Add the room the the current in-memory dictionary now that's locked
         await roomsDictionary.SetRoomStateAsync(room.Id, new()
         {
-            RoomId = room.Id
+            RoomId = room.Id,
+            ServerName = Environment.MachineName
         });
 
         return;
