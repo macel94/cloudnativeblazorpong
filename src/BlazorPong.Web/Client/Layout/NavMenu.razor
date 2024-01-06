@@ -1,0 +1,11 @@
+﻿<div class="navmenu">
+    <nav class="sitenav" aria-labelledby="main-menu">
+        <FluentNavMenu Id="main-menu" Width="250" Collapsible="true" Title="Navigation menu" @bind-Expanded="expanded">
+             <FluentNavLink Href="/" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Home())" IconColor="Color.Accent">Home</FluentNavLink>
+            <FluentNavLink Href="room" Icon="@(new Icons.Regular.Size20.XboxController())" IconColor="Color.Accent">Pong Rooms</FluentNavLink>
+        </FluentNavMenu>
+    </nav>
+</div>
+@code {
+    private bool expanded = true;
+}

@@ -27,7 +27,7 @@
                         <option value=@connectionType>@connectionType</option>
                     }
                 </select>
-                <button type="button" @onclick="ConnectToHub" class="btn btn-primary col">Connect</button>
+                <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
             </div>
         </div>
     }
@@ -42,7 +42,7 @@
             }
             @if (_playerType != Roles.Spectator && GameMessage == null)
             {
-                <button type="button" @onclick="SetPlayerIsReady" class="btn btn-success col" style="height:5%">Play</button>
+                <FluentButton @onclick="SetPlayerIsReady" style="height:5%">Play</FluentButton>
             }
             <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
             <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
@@ -51,9 +51,9 @@
         {
             <div>
                 <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
-                <button @onclick="JoinRoom" class="btn btn-success">Join Room</button>
+                <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
             </div>
-            <button @onclick="GenerateRoomId" class="btn btn-primary">Generate Room ID</button>
+            <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
         }
     }
     @* Solo per centrare il contenuto *@
