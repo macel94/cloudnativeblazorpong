@@ -6,52 +6,76 @@
 @using System.Text
 @implements IAsyncDisposable
 
-<h3>Current User: @username</h3>
-@if (PlayerTypeMessage != null)
-{
-    <h4 id="message" class="makeGolden" style="height:10%">@PlayerTypeMessage</h4>
-}
+<FluentGrid>
+    <FluentGridItem xs="9">
+        <h3>Current User: @username</h3>
+        @if (PlayerTypeMessage != null)
+        {
+            <h4 id="message" class="makeGolden" style="height:10%">@PlayerTypeMessage</h4>
+        }
 
-@* Connection is the first thing as it's needed for anything else *@
-@if (NoConnectionOrInvalid)
-{
-    <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
-    <div style="height:10%">
-        <label for="inlineFormCustomSelect">Connection Type: </label>
-        <select id="inlineFormCustomSelect" @onchange=@SetChoice>
-            @foreach (var connectionType in ConnectionTypesDictionary.Keys)
+        @* Connection is the first thing as it's needed for anything else *@
+        @if (NoConnectionOrInvalid)
+        {
+            <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
+            <div style="height:10%">
+                <label for="inlineFormCustomSelect">Connection Type: </label>
+                <select id="inlineFormCustomSelect" @onchange=@SetChoice>
+                    @foreach (var connectionType in ConnectionTypesDictionary.Keys)
+                    {
+                        <option value=@connectionType>@connectionType</option>
+                    }
+                </select>
+                <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
+            </div>
+        }
+        else
+        {
+            @* Then we need a room and a role for that room *@
+            @if (_playerType.HasValue)
             {
-                <option value=@connectionType>@connectionType</option>
+                @if (GameMessage != null)
+                {
+                    <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
+                }
+                @if (_playerType != Roles.Spectator && GameMessage == null)
+                {
+                    <FluentButton @onclick="SetPlayerIsReady" style="height:5%">Play</FluentButton>
+                }
+                <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
+                <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
             }
-        </select>
-        <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
-    </div>
-}
-else
-{
-    @* Then we need a room and a role for that room *@
-    @if (_playerType.HasValue)
-    {
-        @if (GameMessage != null)
-        {
-            <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
+            else
+            {
+                <div>
+                    <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
+                    <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
+                </div>
+                <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
+            }
         }
-        @if (_playerType != Roles.Spectator && GameMessage == null)
+    </FluentGridItem>
+
+    <FluentGridItem xs="3">
+        <h3>Rendering DateTime Stack</h3>
+
+        @if (dateTimeArray.Any(d => d != default))
         {
-            <FluentButton @onclick="SetPlayerIsReady" style="height:5%">Play</FluentButton>
+            <ul>
+                @for (int i = 0; i < dateTimeArray.Length; i++)
+                {
+                    var index = (currentIndex + i) % dateTimeArray.Length;
+                    if (dateTimeArray[index] != default)
+                    {
+                        <li @key="index">@dateTimeArray[index].ToString("yyyy-MM-dd HH:mm:ss.fff")</li>
+                    }
+                }
+            </ul>
         }
-        <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
-        <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
-    }
-    else
-    {
-        <div>
-            <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
-            <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
-        </div>
-        <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
-    }
-}
+
+        <h3>Updates Per Second: @UpdatesPerSecond</h3>
+    </FluentGridItem>
+</FluentGrid>
 
 <div id="gamearea">
     @if (GameObjectsInitialized)
@@ -68,22 +92,6 @@ else
     }
 </div>
 
-@* <h3>Rendering DateTime Stack</h3>
-
-@if (dateTimeArray.Any(d => d != default))
-{
-    <ul>
-        @for (int i = 0; i < dateTimeArray.Length; i++)
-        {
-            var index = (currentIndex + i) % dateTimeArray.Length;
-            if (dateTimeArray[index] != default)
-            {
-                <li @key="dateTimeArray[index]">@dateTimeArray[index].ToString("yyyy-MM-dd HH:mm:ss.fff")</li>
-            }
-        }
-    </ul>
-} *@
-
 @code {
     [Parameter, EditorRequired]
     public Guid? RoomId { get; set; }
@@ -97,7 +105,8 @@ else
     public ISystemClock SystemClock { get; set; } = default!;
     private HubConnection? Connection;
     private string tempRoomId = string.Empty;
-
+    private DateTimeOffset? LastTimedSecond;
+    private int UpdatesPerSecond;
     // Generate random username for now, in the future will be chosen by the user
     private string username = $"user_{Guid.NewGuid()}";
 
@@ -125,8 +134,8 @@ else
 
     protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new()
     {{nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
-        {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
-        {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}};
+    {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
+    {nameof(HttpTransportType.ServerSentEvents), HttpTransportType.ServerSentEvents}};
     protected Roles? _playerType = null;
     private double _mouseOffset = 0;
     private double _containerTopOffset = 0;
@@ -156,8 +165,11 @@ else
     {
         if (firstRender)
         {
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var assemblyName = assembly.GetName().Name;
+
             module = await JsRuntime.InvokeAsync<IJSObjectReference>(
-            "import", $"./_content/BlazorPong.Components/{nameof(PongComponent)}.razor.js");
+            "import", $"./_content/{assemblyName}/{nameof(PongComponent)}.razor.js");
             _containerHeight = await module.InvokeAsync<double>("getContainerHeight");
             _containerTopOffset = await module.InvokeAsync<double>("getContainerTopOffset", "gamearea");
             if (RoomId.HasValue)
@@ -168,8 +180,21 @@ else
                 StateHasChanged();
             }
         }
-        dateTimeArray[currentIndex] = DateTimeOffset.Now;
+        dateTimeArray[currentIndex] = SystemClock.UtcNow;
         currentIndex = (currentIndex + 1) % dateTimeArray.Length;
+        if (LastTimedSecond == null)
+        {
+            LastTimedSecond = SystemClock.UtcNow;
+        }
+        else if (SystemClock.UtcNow - LastTimedSecond > TimeSpan.FromSeconds(1))
+        {
+            LastTimedSecond = SystemClock.UtcNow;
+            UpdatesPerSecond = 0;
+        }
+        else
+        {
+            UpdatesPerSecond++;
+        }
 
         await base.OnAfterRenderAsync(firstRender);
     }

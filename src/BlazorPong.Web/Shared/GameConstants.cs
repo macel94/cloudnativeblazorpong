@@ -7,14 +7,8 @@ public static class GameConstants
     public const int RightBounds = 100;
     public const int BottomBounds = 0;
     public const int TopBounds = 100;
-#if DEBUG
-    public const float SpeedPerTick = 1.1f;
-    public const int GameDelayBetweenTicksInMs = 100;
-#endif
-#if RELEASE
     public const float SpeedPerTick = 1.3f;
     public const int GameDelayBetweenTicksInMs = 33;
-#endif
     public const int DelayAfterPointInMs = 3000;
     public const int DelayAfterResetInMs = 10000;
     public const int IdleDelayInMs = 10000;

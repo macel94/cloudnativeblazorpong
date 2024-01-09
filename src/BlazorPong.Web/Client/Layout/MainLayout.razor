@@ -48,12 +48,12 @@
             <FluentBodyContent Class="maximize">
                 <ErrorBoundary>
                     <ChildContent>
-                        <div class="content maximize">
-                            @Body
+                    <div class="content maximize">
+                        @Body
                     </div>
                 </ChildContent>
                 <ErrorContent Context="ex">
-                    <div class="blazor-error-boundary">@ex.Message</div>
+                    <div class="blazor-error-boundary">@ex.ToString()</div>
                 </ErrorContent>
             </ErrorBoundary>
         </FluentBodyContent>
