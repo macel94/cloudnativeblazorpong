@@ -1,10 +1,10 @@
-﻿@using BlazorPong.Web.Shared;
+﻿@using BlazorPong.Web.Shared
 @using BlazorPong.Web.Shared.Clock
-@using Microsoft.AspNetCore.Http.Connections;
-@using Microsoft.AspNetCore.SignalR.Client;
-@using Microsoft.JSInterop;
+@using Microsoft.AspNetCore.Http.Connections
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
 @using System.Text
-@implements IAsyncDisposable;
+@implements IAsyncDisposable
 
 <h3>Current User: @username</h3>
 @if (PlayerTypeMessage != null)
@@ -12,68 +12,77 @@
     <h4 id="message" class="makeGolden" style="height:10%">@PlayerTypeMessage</h4>
 }
 
-<div class="row">
-    @* Connection is the first thing as it's needed for anything else *@
-    @if (Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State !=
-    HubConnectionState.Reconnecting))
+@* Connection is the first thing as it's needed for anything else *@
+@if (NoConnectionOrInvalid)
+{
+    <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
+    <div style="height:10%">
+        <label for="inlineFormCustomSelect">Connection Type: </label>
+        <select id="inlineFormCustomSelect" @onchange=@SetChoice>
+            @foreach (var connectionType in ConnectionTypesDictionary.Keys)
+            {
+                <option value=@connectionType>@connectionType</option>
+            }
+        </select>
+        <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
+    </div>
+}
+else
+{
+    @* Then we need a room and a role for that room *@
+    @if (_playerType.HasValue)
     {
-        <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
-        <div class="form-row align-items-center" style="height:10%">
-            <div class="col-auto my-1">
-                <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Connection Type: </label>
-                <select class="custom-select mr-sm-2" id="inlineFormCustomSelect" @onchange=SetChoice>
-                    @foreach (var connectionType in ConnectionTypesDictionary.Keys)
-                    {
-                        <option value=@connectionType>@connectionType</option>
-                    }
-                </select>
-                <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
-            </div>
-        </div>
+        @if (GameMessage != null)
+        {
+            <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
+        }
+        @if (_playerType != Roles.Spectator && GameMessage == null)
+        {
+            <FluentButton @onclick="SetPlayerIsReady" style="height:5%">Play</FluentButton>
+        }
+        <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
+        <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
     }
     else
     {
-        @* Then we need a room and a role for that room *@
-        @if (_playerType.HasValue)
-        {
-            @if (GameMessage != null)
-            {
-                <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
-            }
-            @if (_playerType != Roles.Spectator && GameMessage == null)
-            {
-                <FluentButton @onclick="SetPlayerIsReady" style="height:5%">Play</FluentButton>
-            }
-            <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
-            <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
-        }
-        else
-        {
-            <div>
-                <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
-                <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
-            </div>
-            <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
-        }
+        <div>
+            <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
+            <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
+        </div>
+        <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
     }
-    @* Solo per centrare il contenuto *@
-    <div class="col" />
-</div>
+}
 
 <div id="gamearea">
-    @if (Ball != null && Player1 != null && Player2 != null)
+    @if (GameObjectsInitialized)
     {
-        <div id="@(GameConstants.BallRoleAsString.ToLower())" style="@Ball.ToStyle()" />
-        <div id="@(GameConstants.Player1RoleAsString.ToLower())" draggable=@Player1.Draggable
+        <div id="@(GameConstants.BallRoleAsString.ToLower())" style="@(Ball.ToStyle())" />
+        <div id="@(GameConstants.Player1RoleAsString.ToLower())" draggable=@(Player1.Draggable)
              @ondragstart="@(e => SetInitialMouseOffset(e, Player1))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player1))"
              style="@Player1.ToStyle()" />
-        <div id="@(GameConstants.Player2RoleAsString.ToLower())" draggable=@Player2.Draggable
+        <div id="@(GameConstants.Player2RoleAsString.ToLower())" draggable=@(Player2.Draggable)
              @ondragstart="@(e => SetInitialMouseOffset(e, Player2))"
              @ondrag="@(e => MoveOnYAxisAndFlag(e, Player2))"
              style="@Player2.ToStyle()" />
     }
 </div>
+
+@* <h3>Rendering DateTime Stack</h3>
+
+@if (dateTimeArray.Any(d => d != default))
+{
+    <ul>
+        @for (int i = 0; i < dateTimeArray.Length; i++)
+        {
+            var index = (currentIndex + i) % dateTimeArray.Length;
+            if (dateTimeArray[index] != default)
+            {
+                <li @key="dateTimeArray[index]">@dateTimeArray[index].ToString("yyyy-MM-dd HH:mm:ss.fff")</li>
+            }
+        }
+    </ul>
+} *@
 
 @code {
     [Parameter, EditorRequired]
@@ -112,6 +121,8 @@
         set => GameObjectsDict[GameConstants.Player2RoleAsString] = value;
     }
 
+    private bool GameObjectsInitialized => Ball != null && Player1 != null && Player2 != null;
+
     protected Dictionary<string, HttpTransportType> ConnectionTypesDictionary = new()
     {{nameof(HttpTransportType.WebSockets), HttpTransportType.WebSockets},
         {nameof(HttpTransportType.LongPolling), HttpTransportType.LongPolling},
@@ -128,6 +139,9 @@
     private HttpTransportType _connectionTypeChoice;
     public IJSObjectReference? module { get; set; }
     private double _containerHeight = 0;
+    private DateTimeOffset[] dateTimeArray = new DateTimeOffset[5];
+    private int currentIndex = 0;
+    private bool NoConnectionOrInvalid => Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State != HubConnectionState.Reconnecting);
 
     public void SetInitialMouseOffset(DragEventArgs e, GameObject go)
     {
@@ -154,6 +168,9 @@
                 StateHasChanged();
             }
         }
+        dateTimeArray[currentIndex] = DateTimeOffset.Now;
+        currentIndex = (currentIndex + 1) % dateTimeArray.Length;
+
         await base.OnAfterRenderAsync(firstRender);
     }
 

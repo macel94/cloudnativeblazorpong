@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\BlazorPong.Web\Shared\BlazorPong.Web.Shared.csproj" />
   </ItemGroup>
 

@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BlazorPong.Components\BlazorPong.Components.csproj" />
+    <ProjectReference Include="..\..\BlazorPong.Web.Components\BlazorPong.Web.Components.csproj" />
     <ProjectReference Include="..\Shared\BlazorPong.Web.Shared.csproj" />
   </ItemGroup>
 

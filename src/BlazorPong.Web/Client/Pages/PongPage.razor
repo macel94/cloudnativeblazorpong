@@ -6,7 +6,6 @@
 @page "/room"
 
 <PongComponent GameHubEndpoint="@($"{NavigationManager.BaseUri}gamehub")" RoomId="@(RoomId)" />
-
 @code{
     [Parameter]
     public Guid? RoomId { get; set; }
