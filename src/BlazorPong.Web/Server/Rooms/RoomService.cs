@@ -13,12 +13,12 @@ public class RoomService(IRoomsManager roomGameManager, ILogger<RoomService> log
             {
                 logger.LogInformation("RoomService is running");
                 await roomGameManager.TryLockRoomAsync();
-                await Task.Delay(GameConstants.RoomCheckDelayInMs, cancellationToken);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error in RoomGamesService");
             }
+            await Task.Delay(GameConstants.RoomCheckDelayInMs, cancellationToken);
         }
     }
 }
