@@ -4,7 +4,7 @@ using BlazorPong.Web.Shared.Clock;
 
 namespace BlazorPong.Web.Server.Rooms.Games;
 
-public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock)
+public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock) : IBallManager
 {
     private readonly StringBuilder _stringBuilder = new();
     private CollisionItem _lastCollisionItem;

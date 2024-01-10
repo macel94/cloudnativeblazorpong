@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using BlazorPong.Web.Server.EFCore;
+﻿using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Shared;
 using BlazorPong.Web.Shared.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -8,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BlazorPong.Web.Server.Rooms.Games.Hubs;
 
 //TODO Create interface and use method names with nameof on the client side
-public class GameHub(RoomsManager roomGamesManager, PongDbContext pongDbContext, RedisRoomStateCache roomsDictionary, ILogger<GameHub> logger) : Hub<IBlazorPongClient>
+public class GameHub(IRoomsManager roomGamesManager, PongDbContext pongDbContext, RedisRoomStateCache roomsDictionary, ILogger<GameHub> logger) : Hub<IBlazorPongClient>, IGameHub
 {
     public async Task UpdateGameObjectPosition(Guid roomId, GameObject clientGameObject)
     {

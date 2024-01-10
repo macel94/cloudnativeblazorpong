@@ -1,10 +1,12 @@
 ﻿@using BlazorPong.Web.Shared
 @using BlazorPong.Web.Shared.Clock
+@using BlazorPong.Web.Shared.Hubs
 @using Microsoft.AspNetCore.Http.Connections
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.JSInterop
 @using System.Text
 @implements IAsyncDisposable
+@implements IBlazorPongClient
 
 <FluentGrid>
     <FluentGridItem xs="9">
@@ -18,16 +20,13 @@
         @if (NoConnectionOrInvalid)
         {
             <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
-            <div style="height:10%">
-                <label for="inlineFormCustomSelect">Connection Type: </label>
-                <select id="inlineFormCustomSelect" @onchange=@SetChoice>
-                    @foreach (var connectionType in ConnectionTypesDictionary.Keys)
-                    {
-                        <option value=@connectionType>@connectionType</option>
-                    }
-                </select>
-                <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
-            </div>
+            <FluentSelect Label="Select a Connection Type"
+                          Id="connection-listbox"
+                          Style="height:10%"
+                          Items="@(Enum.GetValues<HttpTransportType>().Where(x => x != HttpTransportType.None))"
+                          @bind-SelectedOption="@connectionTypeChoice" />
+
+            <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
         }
         else
         {
@@ -143,9 +142,9 @@
     protected int Player2Points;
     protected string? PlayerTypeMessage;
     protected string? GameMessage;
-    protected string? ConnectionMessage;
+    protected string ConnectionMessage = "Please select a type of connection and click 'Connect'.";
     private Timer? _updateServerTimer;
-    private HttpTransportType _connectionTypeChoice;
+    private HttpTransportType connectionTypeChoice = HttpTransportType.WebSockets;
     public IJSObjectReference? module { get; set; }
     private double _containerHeight = 0;
     private DateTimeOffset[] dateTimeArray = new DateTimeOffset[5];
@@ -199,13 +198,6 @@
         await base.OnAfterRenderAsync(firstRender);
     }
 
-    protected override void OnInitialized()
-    {
-        ConnectionMessage = "Please select a type of connection and click 'Connect'.";
-
-        _connectionTypeChoice = HttpTransportType.WebSockets;
-    }
-
     public async Task ConnectToHub()
     {
         try
@@ -213,19 +205,19 @@
             await SetOnbeforeunload();
             var endpoint = GameHubEndpoint;
             Connection = new HubConnectionBuilder()
-            .WithUrl(endpoint, _connectionTypeChoice)
+            .WithUrl(endpoint, connectionTypeChoice)
             .WithAutomaticReconnect()
             .Build();
 
-            Connection.On<GameObject>(nameof(UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
-            Connection.On<Roles, int>(nameof(UpdatePlayerPoints), UpdatePlayerPoints);
-            Connection.On<string>(nameof(UpdateGameMessage), UpdateGameMessage);
+            Connection.On<GameObject>(nameof(IBlazorPongClient.UpdateGameObjectPositionOnClient), UpdateGameObjectPositionOnClient);
+            Connection.On<Roles, int>(nameof(IBlazorPongClient.UpdatePlayerPoints), UpdatePlayerPoints);
+            Connection.On<string>(nameof(IBlazorPongClient.UpdateGameMessage), UpdateGameMessage);
 
-            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
 
             await Connection.StartAsync();
 
-            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + _connectionTypeChoice.ToString());
+            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
 
             await LogOnClientAsync("ConnectionId: " + Connection.ConnectionId?.ToString());
         }
@@ -235,10 +227,10 @@
         }
     }
 
-    private async void UpdateGameMessage(string serverMessage)
+    public async Task UpdateGameMessage(string serverMessage)
     {
         GameMessage = serverMessage;
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
 
         // Lascio che l'utente veda il messaggio finale
         await Task.Delay(GameConstants.DelayAfterResetInMs);
@@ -250,10 +242,10 @@
         Player1Points = 0;
         Player2Points = 0;
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private Task UpdatePlayerPoints(Roles clientType, int points)
+    public Task UpdatePlayerPoints(Roles clientType, int points)
     {
         switch (clientType)
         {
@@ -330,7 +322,7 @@
             var go = kvpair.Value!;
             if (go.WasUpdated)
             {
-                await Connection!.SendAsync("UpdateGameObjectPosition", RoomId, go);
+                await Connection!.SendAsync(nameof(IGameHub.UpdateGameObjectPosition), RoomId, go);
                 GameObjectsDict[go.Id] = go with
                     {
                         LastTickClientKnowsServerReceivedUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds()
@@ -342,7 +334,7 @@
     private async Task GetOrInitializeGameObjects()
     {
         // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
-        GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>("GetGameObjects", RoomId);
+        GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>(nameof(IGameHub.GetGameObjects), RoomId);
 
         // Infine setto i draggable che non dipendono dal server
         foreach (var kvpair in GameObjectsDict)
@@ -351,7 +343,7 @@
         }
     }
 
-    private void UpdateGameObjectPositionOnClient(GameObject? updatedObj)
+    public Task UpdateGameObjectPositionOnClient(GameObject? updatedObj)
     {
         if (GameMessage != null && GameMessage != "Game started!")
         {
@@ -365,7 +357,7 @@
         }
 
         // If possible, understand how to remove every StateHasChanged()
-        StateHasChanged();
+        return InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync()
@@ -415,17 +407,10 @@
 
     public async Task SetPlayerIsReady()
     {
-        await Connection!.SendAsync("SetPlayerIsReady", RoomId);
+        await Connection!.SendAsync(nameof(IGameHub.SetPlayerIsReady), RoomId);
         // TODO - Refactor the GameMessage so that it's always the server who sends them and client only receive and visualize them, no logic should be here
         GameMessage = "Waiting for the other player...";
         await InvokeAsync(StateHasChanged);
-    }
-
-    public void SetChoice(ChangeEventArgs e)
-    {
-        var selectedValue = e?.Value?.ToString();
-        _connectionTypeChoice = selectedValue != null && ConnectionTypesDictionary.TryGetValue(selectedValue, out var temp) ?
-        temp : HttpTransportType.WebSockets;
     }
 
     private async Task GenerateRoomId()
@@ -435,7 +420,7 @@
         // Get what type of player the current user will be
         try
         {
-            _playerType = await Connection!.InvokeAsync<Roles>("OpenRoom", RoomId, username);
+            _playerType = await Connection!.InvokeAsync<Roles>(nameof(IGameHub.OpenRoom), RoomId, username);
             await ManageEnteredPlayerTypeAssigned();
         }
         catch (Exception ex)
@@ -451,7 +436,7 @@
             RoomId = roomId;
             NavigationManager.NavigateTo($"/room/{RoomId}/pong");
             // Get what type of player the current user will be
-            _playerType = await Connection!.InvokeAsync<Roles>("JoinRoom", RoomId, username);
+            _playerType = await Connection!.InvokeAsync<Roles>(nameof(IGameHub.JoinRoom), RoomId, username);
             await ManageEnteredPlayerTypeAssigned();
         }
         else

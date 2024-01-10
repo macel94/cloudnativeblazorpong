@@ -133,4 +133,7 @@
   <ItemGroup>
     <RefactorLog Include="Blazorpong.Database.AzureSql.refactorlog" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Blazorpong.Database.AzureSql.localcontainer.publish.xml" />
+  </ItemGroup>
 </Project>

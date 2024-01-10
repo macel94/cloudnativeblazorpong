@@ -1,7 +1,5 @@
-﻿using BlazorPong.Web.Server.Rooms;
-using BlazorPong.Web.Server.Rooms.Games;
+﻿using BlazorPong.Web.Server;
 using BlazorPong.Web.Server.Rooms.Games.Hubs;
-using BlazorPong.Web.Shared.Clock;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,13 +9,8 @@ builder.Services.AddRazorPages();
 
 builder.AddRedis();
 builder.AddAzureSql();
-
-builder.Services.AddTransient<BallManager>();
-
-builder.Services.AddSingleton<ISystemClock, SystemClock>();
-builder.Services.AddSingleton<RoomsManager>();
-builder.Services.AddHostedService<RoomService>();
-builder.Services.AddHostedService<GamesService>();
+builder.AddGameServices();
+builder.AddHostedServices();
 
 var app = builder.Build();
 

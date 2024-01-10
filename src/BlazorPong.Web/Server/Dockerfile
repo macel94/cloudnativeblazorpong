@@ -10,7 +10,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["BlazorPong.Web/Server/BlazorPong.Web.Server.csproj", "BlazorPong.Web/Server/"]
 COPY ["BlazorPong.Web/Client/BlazorPong.Web.Client.csproj", "BlazorPong.Web/Client/"]
-COPY ["BlazorPong.Components/BlazorPong.Components.csproj", "BlazorPong.Components/"]
+COPY ["BlazorPong.Web.Components/BlazorPong.Web.Components.csproj", "BlazorPong.Web.Components/"]
 COPY ["BlazorPong.Web/Shared/BlazorPong.Web.Shared.csproj", "BlazorPong.Web/Shared/"]
 RUN dotnet restore "./BlazorPong.Web/Server/BlazorPong.Web.Server.csproj"
 COPY . .

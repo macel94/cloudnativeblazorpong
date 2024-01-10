@@ -1,9 +1,12 @@
-﻿using System.Reflection;
-using BlazorPong.Web.Server.Cache;
+﻿using BlazorPong.Web.Server.Cache;
 using BlazorPong.Web.Server.EFCore;
 using BlazorPong.Web.Server.Rooms;
+using BlazorPong.Web.Server.Rooms.Games;
+using BlazorPong.Web.Shared.Clock;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+
+namespace BlazorPong.Web.Server;
 
 public static class WebApplicationBuilderExtensions
 {
@@ -35,5 +38,17 @@ public static class WebApplicationBuilderExtensions
         var sqlConnectionString = builder.Configuration.GetConnectionString("AzureSql") ?? throw new Exception("Azure SQL connection string is missing");
         builder.Services.AddDbContext<PongDbContext>(options => options.UseSqlServer(sqlConnectionString), contextLifetime: ServiceLifetime.Singleton);
     }
-}
 
+    public static void AddGameServices(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddTransient<IBallManager, BallManager>();
+        builder.Services.AddSingleton<ISystemClock, SystemClock>();
+        builder.Services.AddSingleton<IRoomsManager, RoomsManager>();
+    }
+
+    public static void AddHostedServices(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddHostedService<RoomService>();
+        builder.Services.AddHostedService<GamesService>();
+    }
+}

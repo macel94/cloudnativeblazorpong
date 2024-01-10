@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace BlazorPong.Web.Server.Rooms.Games;
 
 public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
-                          RoomsManager roomGameManager,
+                          IRoomsManager roomGameManager,
                           RedisRoomStateCache roomsDictionary,
                           ILogger<GamesService> logger,
                           ISystemClock systemClock)
@@ -39,7 +39,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
                         && state?.ServerName != null
                         && state.ServerName.Equals(Environment.MachineName))
                     {
-                        var roomTask = ManageGameSafeAsync(hub, roomKey, roomGameManager, cancellationToken);
+                        var roomTask = ManageGameSafeAsync(roomKey, cancellationToken);
                         activeRoomTasks.Add(roomKey, roomTask);
                     }
                 };
@@ -62,11 +62,11 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
         }
     }
 
-    private async Task ManageGameSafeAsync(IHubContext<GameHub, IBlazorPongClient> hub, Guid roomId, RoomsManager roomGameManager, CancellationToken cancellationToken)
+    private async Task ManageGameSafeAsync(Guid roomId, CancellationToken cancellationToken)
     {
         try
         {
-            await ManageGameAsync(hub, roomId, roomGameManager, cancellationToken);
+            await ManageGameAsync(roomId, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -74,7 +74,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
         }
     }
 
-    private async Task ManageGameAsync(IHubContext<GameHub, IBlazorPongClient> hub, Guid roomId, RoomsManager roomGameManager, CancellationToken cancellationToken)
+    private async Task ManageGameAsync(Guid roomId, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested && hub != null)
         {
@@ -97,11 +97,11 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
                 // Se nessuno ha fatto punto
                 if (string.IsNullOrEmpty(pointPlayerName))
                 {
-                    await ManageNoPlayerPoint(hub, roomState);
+                    await ManageNoPlayerPoint(roomState);
                 }
                 else
                 {
-                    await ManagePlayerPoint(hub, roomGameManager, roomState, pointPlayerName, cancellationToken);
+                    await ManagePlayerPoint(roomState, pointPlayerName, cancellationToken);
                 }
             }
 
@@ -122,7 +122,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
         }
     }
 
-    private static async Task ManagePlayerPoint(IHubContext<GameHub, IBlazorPongClient> hub, RoomsManager roomGameManager, RoomState roomState, string pointPlayerName, CancellationToken cancellationToken)
+    private async Task ManagePlayerPoint(RoomState roomState, string pointPlayerName, CancellationToken cancellationToken)
     {
         int playerPoints;
         Roles playerType;
@@ -145,7 +145,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
         }
     }
 
-    private async Task ManageNoPlayerPoint(IHubContext<GameHub, IBlazorPongClient> hub, RoomState roomState)
+    private async Task ManageNoPlayerPoint(RoomState roomState)
     {
         foreach (var kvPair in roomState.GameObjectsDictionary
                             .Where(kvPair => kvPair.Value != null

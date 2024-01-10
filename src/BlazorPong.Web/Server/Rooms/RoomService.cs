@@ -2,7 +2,7 @@
 
 namespace BlazorPong.Web.Server.Rooms;
 
-public class RoomService(RoomsManager roomGameManager, ILogger<RoomService> logger)
+public class RoomService(IRoomsManager roomGameManager, ILogger<RoomService> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)

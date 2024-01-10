@@ -1,6 +1,4 @@
-﻿using BlazorPong.Web.Shared;
-
-namespace BlazorPong.Web.Shared.Hubs;
+﻿namespace BlazorPong.Web.Shared.Hubs;
 
 public interface IBlazorPongClient
 {

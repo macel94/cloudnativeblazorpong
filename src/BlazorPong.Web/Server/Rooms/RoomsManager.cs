@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BlazorPong.Web.Server.Rooms;
 
-public class RoomsManager(BallManager ballManager,
+public class RoomsManager(IBallManager ballManager,
                           PongDbContext pongDbContext,
                           RedisRoomStateCache roomsDictionary,
                           ILogger<RoomsManager> logger,
-                          ISystemClock systemClock)
+                          ISystemClock systemClock) : IRoomsManager
 {
     public async Task<RoomState> InitializeGameObjectsOnServer(Guid roomId, bool forceInitialization)
     {
@@ -174,7 +174,7 @@ public class RoomsManager(BallManager ballManager,
         return result;
     }
 
-    internal async Task<string> UpdateBallPosition(Guid roomId)
+    public async Task<string> UpdateBallPosition(Guid roomId)
     {
         var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
 
@@ -196,7 +196,7 @@ public class RoomsManager(BallManager ballManager,
         return res;
     }
 
-    internal async Task TryLockRoomAsync()
+    public async Task TryLockRoomAsync()
     {
         var room = await TryGetRoomWithoutServerAssignedAsync();
         if (room != null)
@@ -212,7 +212,7 @@ public class RoomsManager(BallManager ballManager,
         //}
     }
 
-    internal async Task UnlockRoomAsync(Guid key)
+    public async Task UnlockRoomAsync(Guid key)
     {
         var room = await pongDbContext.Rooms.FirstOrDefaultAsync(x => x.Id == key);
         if (room != null)
@@ -254,7 +254,7 @@ public class RoomsManager(BallManager ballManager,
         return pongDbContext.Rooms.FirstOrDefaultAsync(x => x.ServerName == null);
     }
 
-    internal async Task SetPlayerIsReadyAsync(Guid roomId, string connectionId)
+    public async Task SetPlayerIsReadyAsync(Guid roomId, string connectionId)
     {
         var roomstate = await roomsDictionary.UnsafeGetRoomStateAsync(roomId);
         if (roomstate.Player1ConnectionId == connectionId)
@@ -269,7 +269,7 @@ public class RoomsManager(BallManager ballManager,
         await roomsDictionary.SetRoomStateAsync(roomId, roomstate);
     }
 
-    internal async Task SetPlayerConnectionIdAsync(RoomState roomstate, Roles role, string connectionId)
+    public async Task SetPlayerConnectionIdAsync(RoomState roomstate, Roles role, string connectionId)
     {
         if (role == Roles.Spectator)
         {

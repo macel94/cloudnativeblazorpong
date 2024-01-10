@@ -6,25 +6,39 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__AzureSql=Server=azuresql;Database=pongfreesqlserver;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
     ports:
       - "6350:8080"
-    volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+    # volumes:
+    #   - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
     depends_on:
       - redis
-  blazorpong.web.server.2:
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__Redis=redis:6379
-    ports:
-      - "6351:8080"
-    volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-    depends_on:
-      - redis
+      - azuresql
+
+  # blazorpong.web.server.2:
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_HTTP_PORTS=8080
+  #     - ConnectionStrings__Redis=redis:6379
+  #     - ConnectionStrings__AzureSql=Server=azuresql;Database=pongfreesqlserver;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+  #   ports:
+  #     - "6351:8080"
+  # #   volumes:
+  # #     - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+  #   depends_on:
+  #     - redis
+  #     - azuresql
 
   redis:
     image: "redis:latest"
     ports:
       - "6379:6379"
+  
+  azuresql:
+    image: "mcr.microsoft.com/azure-sql-edge:latest"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=yourStrong(!)Password
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
