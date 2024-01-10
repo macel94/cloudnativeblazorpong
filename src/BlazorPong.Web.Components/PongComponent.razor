@@ -3,6 +3,7 @@
 @using BlazorPong.Web.Shared.Hubs
 @using Microsoft.AspNetCore.Http.Connections
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using System.Text
 @implements IAsyncDisposable
@@ -92,6 +93,9 @@
 </div>
 
 @code {
+    // Get Ilogger
+    [Inject]
+    public ILogger<PongComponent> Logger { get; set; } = default!;
     [Parameter, EditorRequired]
     public Guid? RoomId { get; set; }
     [Parameter, EditorRequired]
@@ -153,7 +157,7 @@
 
     public void SetInitialMouseOffset(DragEventArgs e, GameObject go)
     {
-        LogOnClientAsync("Drag started for: " + go.Id);
+        Logger.LogInformation("Drag started for: " + go.Id);
 
         // Assuming go.Top is the current top position of the element in percentage
         var currentTopInPixels = (go.Top / 100) * _containerHeight;
@@ -213,17 +217,17 @@
             Connection.On<Roles, int>(nameof(IBlazorPongClient.UpdatePlayerPoints), UpdatePlayerPoints);
             Connection.On<string>(nameof(IBlazorPongClient.UpdateGameMessage), UpdateGameMessage);
 
-            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
+            Logger.LogInformation("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
 
             await Connection.StartAsync();
 
-            await LogOnClientAsync("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
+            Logger.LogInformation("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
 
-            await LogOnClientAsync("ConnectionId: " + Connection.ConnectionId?.ToString());
+            Logger.LogInformation("ConnectionId: " + Connection.ConnectionId?.ToString());
         }
         catch (Exception ex)
         {
-            await LogOnClientAsync(ex.ToString());
+            Logger.LogInformation(ex.ToString());
         }
     }
 
@@ -289,7 +293,7 @@
         .AppendLine($"ContainerHeight: {_containerHeight}")
         .AppendLine($"NextTop: {nextTop}")
         .AppendLine($"MaxTop: {maxTop}");
-        LogOnClientAsync(sb.ToString());
+        Logger.LogDebug(sb.ToString());
 
         GameObjectsDict[go.Id]!.Top = nextTop;
         GameObjectsDict[go.Id]!.LastUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds();
@@ -306,7 +310,7 @@
         }
         catch (Exception ex)
         {
-            await LogOnClientAsync(ex.ToString());
+            Logger.LogInformation(ex.ToString());
         }
     }
 
@@ -392,12 +396,6 @@
         return module!.InvokeAsync<object>("unsetOnbeforeunload", DotNetObjectReference.Create(this)).AsTask();
     }
 
-    private Task LogOnClientAsync(string message)
-    {
-        // Refactor per usare lo standard ILogger anzichè sta robaccia
-        return module!.InvokeAsync<object>("log", message).AsTask();
-    }
-
     // DO NOT DELETE - This is called on dispose by js
     [JSInvokable]
     public Task DisposePongComponent()
@@ -425,7 +423,7 @@
         }
         catch (Exception ex)
         {
-            await LogOnClientAsync(ex.ToString());
+            Logger.LogInformation(ex.ToString());
         }
     }
 
@@ -448,18 +446,18 @@
 
     private async Task ManageEnteredPlayerTypeAssigned()
     {
-        await LogOnClientAsync("Player type:" + _playerType.ToString());
+        Logger.LogInformation("Player type:" + _playerType.ToString());
 
         PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
 
         await GetOrInitializeGameObjects();
 
-        await LogOnClientAsync("GameObjects initialization completed.");
+        Logger.LogInformation("GameObjects initialization completed.");
 
         // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
         // Iniziamo un secondo dopo l'inizializzazione del timer
         _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
 
-        await LogOnClientAsync("Timer Started!");
+        Logger.LogInformation("Timer Started!");
     }
 }
