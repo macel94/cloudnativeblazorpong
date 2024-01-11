@@ -6,7 +6,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__Redis=redis:6379
-      - ConnectionStrings__AzureSql=Server=azuresql;Database=pongfreesqlserver;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
     ports:
       - "6350:8080"
     # volumes:
@@ -15,19 +15,19 @@ services:
       - redis
       - azuresql
 
-  # blazorpong.web.server.2:
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_HTTP_PORTS=8080
-  #     - ConnectionStrings__Redis=redis:6379
-  #     - ConnectionStrings__AzureSql=Server=azuresql;Database=pongfreesqlserver;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
-  #   ports:
-  #     - "6351:8080"
-  # #   volumes:
-  # #     - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-  #   depends_on:
-  #     - redis
-  #     - azuresql
+  blazorpong.web.server.2:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+    ports:
+      - "6351:8080"
+    # volumes:
+    #   - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+    depends_on:
+      - redis
+      - azuresql
 
   redis:
     image: "redis:latest"
@@ -37,7 +37,7 @@ services:
   azuresql:
     image: "mcr.microsoft.com/azure-sql-edge:latest"
     volumes:
-      - ./src/Blazorpong.Database.AzureSql/Snapshots:/backup
+      - ./Blazorpong.Database.AzureSql/Snapshots:/backup:ro
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
