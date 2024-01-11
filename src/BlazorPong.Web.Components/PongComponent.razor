@@ -12,47 +12,52 @@
 <FluentGrid>
     <FluentGridItem xs="9">
         <h3>Current User: @username</h3>
-        @if (PlayerTypeMessage != null)
-        {
-            <h4 id="message" class="makeGolden" style="height:10%">@PlayerTypeMessage</h4>
-        }
 
-        @* Connection is the first thing as it's needed for anything else *@
-        @if (NoConnectionOrInvalid)
-        {
-            <h5 class="makeGolden" style="height:10%">@ConnectionMessage</h5>
-            <FluentSelect Label="Select a Connection Type"
-                          Id="connection-listbox"
-                          Style="height:10%"
-                          Items="@(Enum.GetValues<HttpTransportType>().Where(x => x != HttpTransportType.None))"
-                          @bind-SelectedOption="@connectionTypeChoice" />
+        <FluentStack Orientation="Orientation.Vertical">
 
-            <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
-        }
-        else
-        {
-            @* Then we need a room and a role for that room *@
-            @if (_playerType.HasValue)
+            @if (PlayerTypeMessage != null)
             {
-                @if (GameMessage != null)
-                {
-                    <h4 class="col makeGolden" style="height:5%">@GameMessage</h4>
-                }
-                @if (_playerType != Roles.Spectator && GameMessage == null)
-                {
-                    <FluentButton @onclick="SetPlayerIsReady" style="height:5%">Play</FluentButton>
-                }
-                <div class="col makeRed" style="height:5%">Player 1: @Player1Points</div>
-                <div class="col makeGreen" style="height:5%">Player 2: @Player2Points</div>
+                <h4 id="message" class="makeGolden">@PlayerTypeMessage</h4>
+            }
+
+            @* Connection is the first thing as it's needed for anything else *@
+            @if (NoConnectionOrInvalid)
+            {
+                <FluentSelect Label="Select a Connection Type"
+                              Id="connection-listbox"
+                              Items="@(Enum.GetValues<HttpTransportType>().Where(x => x != HttpTransportType.None))"
+                              @bind-SelectedOption="@connectionTypeChoice" />
+
+                <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
             }
             else
             {
-                <div>
-                    <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
-                    <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
-                </div>
-                <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
+                @* Then we need a room and a role for that room *@
+                <FluentStack>
+                    @if (_playerType.HasValue)
+                    {
+                        @if (GameMessage != null)
+                        {
+                            <h4 class="makeGolden">@GameMessage</h4>
+                        }
+                        <div class="makeRed">Player 1: @Player1Points</div>
+                        <div class="makeGreen">Player 2: @Player2Points</div>
+                    }
+                    else
+                    {
+                        <div>
+                            <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
+                            <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
+                        </div>
+                        <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
+                    }
+                </FluentStack>
             }
+        </FluentStack>
+
+        @if (_playerType.HasValue && _playerType != Roles.Spectator && GameMessage == null)
+        {
+            <FluentButton @onclick="SetPlayerIsReady">Play</FluentButton>
         }
     </FluentGridItem>
 
@@ -146,12 +151,17 @@
     protected int Player2Points;
     protected string? PlayerTypeMessage;
     protected string? GameMessage;
-    protected string ConnectionMessage = "Please select a type of connection and click 'Connect'.";
     private Timer? _updateServerTimer;
     private HttpTransportType connectionTypeChoice = HttpTransportType.WebSockets;
     public IJSObjectReference? module { get; set; }
     private double _containerHeight = 0;
-    private DateTimeOffset[] dateTimeArray = new DateTimeOffset[5];
+    // I Initialize this just because if not pre-populated it makes everything slide down on each of the first 5 updates and it feels like a 90'app
+    private DateTimeOffset[] dateTimeArray = new DateTimeOffset[3]
+    {
+        DateTimeOffset.MinValue,
+        DateTimeOffset.MinValue,
+        DateTimeOffset.MinValue
+    };
     private int currentIndex = 0;
     private bool NoConnectionOrInvalid => Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State != HubConnectionState.Reconnecting);
 
