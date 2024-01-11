@@ -67,6 +67,7 @@ This will be removed and dev containers will be used instead.
 Anyway, to use locally you need to have the following installed:
 https://redis.io/docs/install/install-redis/install-redis-on-windows/
 https://github.com/Azure/azure-signalr/blob/dev/docs/emulator.md
+dotnet tool install -g microsoft.sqlpackage
 
 # What should the actual app do
 

@@ -64,7 +64,7 @@
     <FluentGridItem xs="3">
         <h3>Rendering DateTime Stack</h3>
 
-        @if (dateTimeArray.Any(d => d != default))
+        @if (dateTimeArray.Any())
         {
             <ul>
                 @for (int i = 0; i < dateTimeArray.Length; i++)
@@ -156,12 +156,7 @@
     public IJSObjectReference? module { get; set; }
     private double _containerHeight = 0;
     // I Initialize this just because if not pre-populated it makes everything slide down on each of the first 5 updates and it feels like a 90'app
-    private DateTimeOffset[] dateTimeArray = new DateTimeOffset[3]
-    {
-        DateTimeOffset.MinValue,
-        DateTimeOffset.MinValue,
-        DateTimeOffset.MinValue
-    };
+    private DateTimeOffset[] dateTimeArray = new DateTimeOffset[3];
     private int currentIndex = 0;
     private bool NoConnectionOrInvalid => Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State != HubConnectionState.Reconnecting);
 

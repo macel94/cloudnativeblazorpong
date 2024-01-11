@@ -36,9 +36,12 @@ services:
   
   azuresql:
     image: "mcr.microsoft.com/azure-sql-edge:latest"
+    volumes:
+      - ./src/Blazorpong.Database.AzureSql/Snapshots:/backup
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
       - MSSQL_PID=Developer
+      - MSSQL_PACKAGE=/backup/v0.dacpac
     ports:
       - "1433:1433"

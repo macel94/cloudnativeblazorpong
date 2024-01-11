@@ -125,6 +125,8 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="Snapshots" />
+    <Folder Include="Scripts" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="dbo.Room.sql" />
@@ -135,5 +137,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Blazorpong.Database.AzureSql.localcontainer.publish.xml" />
+    <None Include="Snapshots\v0.dacpac" />
+    <None Include="Dockerfile" />
+    <None Include="Scripts\deploy-dacpac.sh" />
   </ItemGroup>
 </Project>
