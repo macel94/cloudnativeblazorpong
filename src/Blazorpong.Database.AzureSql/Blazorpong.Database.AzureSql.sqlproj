@@ -126,7 +126,6 @@
   <ItemGroup>
     <Folder Include="Properties" />
     <Folder Include="Snapshots" />
-    <Folder Include="Scripts" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="dbo.Room.sql" />
@@ -138,7 +137,5 @@
   <ItemGroup>
     <None Include="Blazorpong.Database.AzureSql.localcontainer.publish.xml" />
     <None Include="Snapshots\v0.dacpac" />
-    <None Include="Dockerfile" />
-    <None Include="Scripts\deploy-dacpac.sh" />
   </ItemGroup>
 </Project>

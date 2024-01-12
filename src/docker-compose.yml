@@ -6,8 +6,8 @@ services:
     build:
       context: .
       dockerfile: BlazorPong.Web/Server/Dockerfile
-  blazorpong.web.server.2:
-    image: ${DOCKER_REGISTRY-}blazorpongwebserver
-    build:
-      context: .
-      dockerfile: BlazorPong.Web/Server/Dockerfile
+  # blazorpong.web.server.2:
+  #   image: ${DOCKER_REGISTRY-}blazorpongwebserver
+  #   build:
+  #     context: .
+  #     dockerfile: BlazorPong.Web/Server/Dockerfile
