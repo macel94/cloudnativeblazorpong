@@ -1,4 +1,4 @@
-# Using .NET Chiseled image as the base
+# Using .NET image as the base
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy AS base
 USER app
 WORKDIR /app
@@ -22,7 +22,7 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./BlazorPong.Web.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Final stage, using the Chiseled base image
+# Final stage, using the base image
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .

@@ -4,7 +4,6 @@ public record GameObject(string Id, double Width, double Height)
 {
     public double Left { get; set; }
     public double Top { get; set; }
-    public bool Draggable { get; set; }
     public long LastTickClientKnowsServerReceivedUpdate { get; set; }
     public long LastTimeServerReceivedUpdate { get; set; }
     public string? LastSinglaRServerReceivedUpdateName { get; set; }

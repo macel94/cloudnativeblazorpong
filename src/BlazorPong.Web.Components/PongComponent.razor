@@ -45,11 +45,18 @@
                     }
                     else
                     {
-                        <div>
-                            <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
-                            <FluentButton @onclick="JoinRoom">Join Room</FluentButton>
-                        </div>
-                        <FluentButton @onclick="GenerateRoomId">Generate Room ID</FluentButton>
+                        if (isLoadingRoomState)
+                        {
+                            <FluentProgressRing />
+                        }
+                        else
+                        {
+                            <div>
+                                <input type="text" @bind="tempRoomId" placeholder="Enter Room ID" />
+                                <FluentButton @onclick="() => ExecuteWithLoadingStateAsync(JoinRoomAsync)">Join Room</FluentButton>
+                            </div>
+                            <FluentButton @onclick="() => ExecuteWithLoadingStateAsync(OpenRoomAsync)">Create new Room</FluentButton>
+                        }
                     }
                 </FluentStack>
             }
@@ -64,16 +71,13 @@
     <FluentGridItem xs="3">
         <h4>Rendering DateTime Stack</h4>
 
-        @if (dateTimeArray.Any())
+        @if (dateTimeArray.Length > 0)
         {
             <ul>
                 @for (int i = 0; i < dateTimeArray.Length; i++)
                 {
-                    var index = (currentIndex + i) % dateTimeArray.Length;
-                    if (dateTimeArray[index] != default)
-                    {
-                        <li @key="index">@dateTimeArray[index].ToString("yyyy-MM-dd HH:mm:ss.fff")</li>
-                    }
+                    var tempValue = dateTimeArray[i];
+                    <li @key="i">@(tempValue.HasValue ? tempValue.Value.ToString("yyyy-MM-dd HH:mm:ss.fff") : "undefined")</li>
                 }
             </ul>
         }
@@ -85,15 +89,15 @@
 <div id="gamearea">
     @if (GameObjectsInitialized)
     {
-        <div id="@(GameConstants.BallRoleAsString.ToLower())" style="@(Ball.ToStyle())" />
-        <div id="@(GameConstants.Player1RoleAsString.ToLower())" draggable=@(Player1.Draggable)
-             @ondragstart="@(e => SetInitialMouseOffset(e, Player1))"
-             @ondrag="@(e => MoveOnYAxisAndFlag(e, Player1))"
-             style="@Player1.ToStyle()" />
-        <div id="@(GameConstants.Player2RoleAsString.ToLower())" draggable=@(Player2.Draggable)
-             @ondragstart="@(e => SetInitialMouseOffset(e, Player2))"
-             @ondrag="@(e => MoveOnYAxisAndFlag(e, Player2))"
-             style="@Player2.ToStyle()" />
+        <div id="@(GameConstants.BallRoleAsString.ToLower())" style="@(Ball!.ToStyle())" />
+        <div id="@(GameConstants.Player1RoleAsString.ToLower())" draggable="true"
+             @ondragstart="@(e => SetInitialMouseOffset(e, Player1!))"
+             @ondrag="@(e => MoveOnYAxisAndFlag(e, Player1!))"
+             style="@Player1!.ToStyle()" />
+        <div id="@(GameConstants.Player2RoleAsString.ToLower())" draggable="true"
+             @ondragstart="@(e => SetInitialMouseOffset(e, Player2!))"
+             @ondrag="@(e => MoveOnYAxisAndFlag(e, Player2!))"
+             style="@Player2!.ToStyle()" />
     }
 </div>
 
@@ -155,15 +159,13 @@
     private HttpTransportType connectionTypeChoice = HttpTransportType.WebSockets;
     public IJSObjectReference? module { get; set; }
     private double _containerHeight = 0;
-    // I Initialize this just because if not pre-populated it makes everything slide down on each of the first 5 updates and it feels like a 90'app
-    private DateTimeOffset[] dateTimeArray = new DateTimeOffset[3];
+    private DateTimeOffset?[] dateTimeArray = new DateTimeOffset?[3];
     private int currentIndex = 0;
     private bool NoConnectionOrInvalid => Connection == null || (Connection.State != HubConnectionState.Connected && Connection.State != HubConnectionState.Reconnecting);
+    private bool isLoadingRoomState = false;
 
     public void SetInitialMouseOffset(DragEventArgs e, GameObject go)
     {
-        Logger.LogInformation("Drag started for: " + go.Id);
-
         // Assuming go.Top is the current top position of the element in percentage
         var currentTopInPixels = (go.Top / 100) * _containerHeight;
         _mouseOffset = e.ClientY - _containerTopOffset - currentTopInPixels;
@@ -180,12 +182,13 @@
             "import", $"./_content/{assemblyName}/{nameof(PongComponent)}.razor.js");
             _containerHeight = await module.InvokeAsync<double>("getContainerHeight");
             _containerTopOffset = await module.InvokeAsync<double>("getContainerTopOffset", "gamearea");
+
             if (RoomId.HasValue)
             {
                 tempRoomId = RoomId.Value.ToString();
                 await ConnectToHub();
-                await JoinRoom();
-                StateHasChanged();
+                await JoinRoomAsync();
+                await InvokeAsync(StateHasChanged);
             }
         }
         dateTimeArray[currentIndex] = SystemClock.UtcNow;
@@ -222,11 +225,11 @@
             Connection.On<Roles, int>(nameof(IBlazorPongClient.UpdatePlayerPoints), UpdatePlayerPoints);
             Connection.On<string>(nameof(IBlazorPongClient.UpdateGameMessage), UpdateGameMessage);
 
-            Logger.LogInformation("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
+            Logger.LogInformation("State: " + Connection.State.ToString() + "Type: " + connectionTypeChoice.ToString());
 
             await Connection.StartAsync();
 
-            Logger.LogInformation("State: " + Connection.State.ToString() + "Type:" + connectionTypeChoice.ToString());
+            Logger.LogInformation("State: " + Connection.State.ToString() + "Type: " + connectionTypeChoice.ToString());
 
             Logger.LogInformation("ConnectionId: " + Connection.ConnectionId?.ToString());
         }
@@ -273,7 +276,7 @@
 
     public void MoveOnYAxisAndFlag(DragEventArgs e, GameObject go)
     {
-        if (!go.Draggable || e.ClientY <= 0)
+        if (!go.Id.Equals(_playerType!.Value.ToString()) || e.ClientY <= 0)
         {
             return;
         }
@@ -304,6 +307,25 @@
         GameObjectsDict[go.Id]!.LastUpdate = SystemClock.UtcNow.ToUnixTimeMilliseconds();
 
         StateHasChanged();
+    }
+
+    private async Task ExecuteWithLoadingStateAsync(Func<Task> action)
+    {
+        try
+        {
+            isLoadingRoomState = true;
+            await InvokeAsync(StateHasChanged);
+            await action();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogInformation(ex.ToString());
+        }
+        finally
+        {
+            isLoadingRoomState = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     // TODO - https://github.com/microsoft/dotnet-podcasts/blob/main/src/Web/Components/ListenTogetherHubClient.cs#L5
@@ -344,12 +366,7 @@
     {
         // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
         GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>(nameof(IGameHub.GetGameObjects), RoomId);
-
-        // Infine setto i draggable che non dipendono dal server
-        foreach (var kvpair in GameObjectsDict)
-        {
-            kvpair.Value!.Draggable = kvpair.Key.Equals(_playerType.ToString());
-        }
+        Logger.LogInformation("GameObjects initialization completed.");
     }
 
     public Task UpdateGameObjectPositionOnClient(GameObject? updatedObj)
@@ -357,6 +374,9 @@
         if (GameMessage != null && GameMessage != "Game started!")
         {
             GameMessage = "Game started!";
+            _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
+
+            Logger.LogInformation("Timer Started!");
         }
 
         if (GameObjectsDict.TryGetValue(updatedObj!.Id, out var foundObj))
@@ -416,7 +436,7 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task GenerateRoomId()
+    private async Task OpenRoomAsync()
     {
         RoomId = Guid.NewGuid();
         NavigationManager.NavigateTo($"/room/{RoomId}/pong");
@@ -432,7 +452,7 @@
         }
     }
 
-    private async Task JoinRoom()
+    private async Task JoinRoomAsync()
     {
         if (Guid.TryParse(tempRoomId, out var roomId))
         {
@@ -451,18 +471,10 @@
 
     private async Task ManageEnteredPlayerTypeAssigned()
     {
-        Logger.LogInformation("Player type:" + _playerType.ToString());
+        Logger.LogInformation($"Player type: {_playerType}");
 
         PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
 
         await GetOrInitializeGameObjects();
-
-        Logger.LogInformation("GameObjects initialization completed.");
-
-        // Ogni decimo di secondo controlliamo se necessario fare l'update delle collisioni al server e in caso lo mandiamo
-        // Iniziamo un secondo dopo l'inizializzazione del timer
-        _updateServerTimer = new Timer(UpdateServer, null, 1000, 10);
-
-        Logger.LogInformation("Timer Started!");
     }
 }
