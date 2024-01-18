@@ -2,7 +2,7 @@
 using BlazorPong.Web.Shared;
 using BlazorPong.Web.Shared.Clock;
 
-namespace BlazorPong.Web.Server.Rooms.Games;
+namespace BlazorPong.SignalR.Rooms.Games;
 
 public class BallManager(ILogger<BallManager> logger, ISystemClock systemClock) : IBallManager
 {

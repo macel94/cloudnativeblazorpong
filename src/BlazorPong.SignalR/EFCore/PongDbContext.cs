@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace BlazorPong.Web.Server.EFCore;
+namespace BlazorPong.SignalR.EFCore;
 
 public partial class PongDbContext : DbContext
 {

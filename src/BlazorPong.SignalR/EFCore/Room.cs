@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace BlazorPong.Web.Server.EFCore;
+namespace BlazorPong.SignalR.EFCore;
 
 public partial class Room
 {

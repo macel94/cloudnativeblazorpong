@@ -1,11 +1,17 @@
 version: '3.8'
 
 services:
-  blazorpong.web.server.1:
+  webapp:
     image: ${DOCKER_REGISTRY-}blazorpongwebserver
     build:
       context: .
       dockerfile: BlazorPong.Web/Server/Dockerfile
+  signalr:
+    image: ${DOCKER_REGISTRY-}blazorpongsignalr
+    build:
+      context: .
+      dockerfile: BlazorPong.SignalR/Dockerfile
+
   # blazorpong.web.server.2:
   #   image: ${DOCKER_REGISTRY-}blazorpongwebserver
   #   build:

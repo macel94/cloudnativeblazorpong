@@ -1,10 +1,11 @@
-﻿using BlazorPong.Web.Server.EFCore;
+﻿using BlazorPong.SignalR.EFCore;
+using BlazorPong.SignalR.Rooms;
 using BlazorPong.Web.Shared;
 using BlazorPong.Web.Shared.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace BlazorPong.Web.Server.Rooms.Games.Hubs;
+namespace BlazorPong.SignalR.Hubs;
 
 //TODO Create interface and use method names with nameof on the client side
 public class GameHub(IRoomsManager roomGamesManager, PongDbContext pongDbContext, RedisRoomStateCache roomsDictionary, ILogger<GameHub> logger) : Hub<IBlazorPongClient>, IGameHub
@@ -22,7 +23,7 @@ public class GameHub(IRoomsManager roomGamesManager, PongDbContext pongDbContext
 
     public async Task<Dictionary<string, GameObject>> GetGameObjects(Guid roomId)
     {
-        var roomState = (await roomsDictionary.UnsafeGetRoomStateAsync(roomId)) ?? throw new InvalidOperationException($"Room with id {roomId} not found");
+        var roomState = await roomsDictionary.UnsafeGetRoomStateAsync(roomId) ?? throw new InvalidOperationException($"Room with id {roomId} not found");
         if (roomState.GameObjectsDictionary == null || roomState.GameObjectsDictionary.Count != 3)
         {
             // Aggiungo solo i mancanti se sono qui

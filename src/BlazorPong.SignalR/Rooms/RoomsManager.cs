@@ -1,10 +1,10 @@
-﻿using BlazorPong.Web.Server.EFCore;
-using BlazorPong.Web.Server.Rooms.Games;
+﻿using BlazorPong.SignalR.EFCore;
+using BlazorPong.SignalR.Rooms.Games;
 using BlazorPong.Web.Shared;
 using BlazorPong.Web.Shared.Clock;
 using Microsoft.EntityFrameworkCore;
 
-namespace BlazorPong.Web.Server.Rooms;
+namespace BlazorPong.SignalR.Rooms;
 
 public class RoomsManager(IBallManager ballManager,
                           PongDbContext pongDbContext,

@@ -1,9 +1,9 @@
 ﻿using System.Text.Json;
-using BlazorPong.Web.Server.Cache;
+using BlazorPong.SignalR.Cache;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 
-namespace BlazorPong.Web.Server.Rooms;
+namespace BlazorPong.SignalR.Rooms;
 
 public class RedisRoomStateCache(IDistributedCache cache, IServer redisServer, IDatabase redisDatabase)
 {

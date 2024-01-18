@@ -1,16 +1,10 @@
-﻿using BlazorPong.Web.Server;
-using BlazorPong.Web.Server.Rooms.Games.Hubs;
+﻿using BlazorPong.Web.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddLogging();
 builder.Services.AddRazorPages();
-
-builder.AddRedis();
-builder.AddAzureSql();
-builder.AddGameServices();
-builder.AddHostedServices();
 
 var app = builder.Build();
 
@@ -28,10 +22,11 @@ app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+// Map get for GetBaseClientConfig endpoint that
+app.MapGet("/api/GetBaseClientConfig",
+    () => new BaseClientConfig(app.Configuration["GameHubEndpoint"] ?? throw new InvalidOperationException("GameHubEndpoint not found in config"))
+);
 app.MapRazorPages();
-app.MapControllers();
-app.MapHub<GameHub>("/gamehub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

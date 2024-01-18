@@ -1,4 +1,4 @@
-﻿namespace BlazorPong.Web.Server.Rooms.Games;
+﻿namespace BlazorPong.SignalR.Rooms.Games;
 
 internal enum CollisionItem
 {

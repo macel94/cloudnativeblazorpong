@@ -7,7 +7,7 @@
     <ProjectGuid>c8122674-880e-43f2-9dc3-b17ba34e02b6</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
-    <DockerServiceName>blazorpong.web.server.1</DockerServiceName>
+    <DockerServiceName>webapp</DockerServiceName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAOT|AnyCPU'" />

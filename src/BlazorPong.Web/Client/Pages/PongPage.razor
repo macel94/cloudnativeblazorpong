@@ -1,12 +1,21 @@
 ﻿@using System.Reflection
+@using BlazorPong.Web.Shared
 @using Microsoft.Extensions.Configuration
-@inject IConfiguration Configuration
+@inject HttpClient ServerHttpClient
 @inject NavigationManager NavigationManager
 @page "/room/{roomId:guid}/pong"
 @page "/room"
 
-<PongComponent GameHubEndpoint="@($"{NavigationManager.BaseUri}gamehub")" RoomId="@(RoomId)" />
-@code{
+<PongComponent GameHubEndpoint="@(GameHubEndpoint)" RoomId="@(RoomId)" />
+@code {
     [Parameter]
     public Guid? RoomId { get; set; }
+    private string GameHubEndpoint { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var result = await ServerHttpClient.GetFromJsonAsync<BaseClientConfig>("GetBaseClientConfig") ?? throw new Exception("Could not get GameHubEndpoint");
+        GameHubEndpoint = result.GameHubEndpoint;
+    }
 }

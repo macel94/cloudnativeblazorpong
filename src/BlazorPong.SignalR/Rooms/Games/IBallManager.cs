@@ -1,6 +1,6 @@
 ﻿using BlazorPong.Web.Shared;
 
-namespace BlazorPong.Web.Server.Rooms.Games
+namespace BlazorPong.SignalR.Rooms.Games
 {
     public interface IBallManager
     {

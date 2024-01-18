@@ -8,10 +8,10 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["BlazorPong.Web/Server/BlazorPong.Web.Server.csproj", "BlazorPong.Web/Server/"]
-COPY ["BlazorPong.Web/Client/BlazorPong.Web.Client.csproj", "BlazorPong.Web/Client/"]
-COPY ["BlazorPong.Web.Components/BlazorPong.Web.Components.csproj", "BlazorPong.Web.Components/"]
 COPY ["BlazorPong.Web/Shared/BlazorPong.Web.Shared.csproj", "BlazorPong.Web/Shared/"]
+COPY ["BlazorPong.Web.Components/BlazorPong.Web.Components.csproj", "BlazorPong.Web.Components/"]
+COPY ["BlazorPong.Web/Client/BlazorPong.Web.Client.csproj", "BlazorPong.Web/Client/"]
+COPY ["BlazorPong.Web/Server/BlazorPong.Web.Server.csproj", "BlazorPong.Web/Server/"]
 RUN dotnet restore "./BlazorPong.Web/Server/BlazorPong.Web.Server.csproj"
 COPY . .
 WORKDIR "/src/BlazorPong.Web/Server"

@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Web.Client", "Bl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Web.Components", "BlazorPong.Web.Components\BlazorPong.Web.Components.csproj", "{636FADEB-CD71-4997-BCE2-815075D1ACBD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.SignalR", "BlazorPong.SignalR\BlazorPong.SignalR.csproj", "{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +68,12 @@ Global
 		{636FADEB-CD71-4997-BCE2-815075D1ACBD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{636FADEB-CD71-4997-BCE2-815075D1ACBD}.ReleaseAOT|Any CPU.ActiveCfg = ReleaseAOT|Any CPU
 		{636FADEB-CD71-4997-BCE2-815075D1ACBD}.ReleaseAOT|Any CPU.Build.0 = ReleaseAOT|Any CPU
+		{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}.ReleaseAOT|Any CPU.ActiveCfg = Release|Any CPU
+		{7F5AC8D2-4CDC-4F14-9F31-267A0F08EBB2}.ReleaseAOT|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

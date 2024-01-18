@@ -1,10 +1,11 @@
-﻿using BlazorPong.Web.Server.Rooms.Games.Hubs;
+﻿using BlazorPong.SignalR.Hubs;
+using BlazorPong.SignalR.Rooms;
 using BlazorPong.Web.Shared;
 using BlazorPong.Web.Shared.Clock;
 using BlazorPong.Web.Shared.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
-namespace BlazorPong.Web.Server.Rooms.Games;
+namespace BlazorPong.SignalR.Rooms.Games;
 
 public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
                           IRoomsManager roomGameManager,
@@ -35,7 +36,7 @@ public class GamesService(IHubContext<GameHub, IBlazorPongClient> hub,
                     var state = await roomsDictionary.UnsafeGetRoomStateAsync(roomKey);
 
                     // Start a task for new rooms assigned to this server
-                    if (!activeRoomTasks.ContainsKey(roomKey) 
+                    if (!activeRoomTasks.ContainsKey(roomKey)
                         && state?.ServerName != null
                         && state.ServerName.Equals(Environment.MachineName))
                     {

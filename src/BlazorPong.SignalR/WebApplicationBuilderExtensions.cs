@@ -1,12 +1,12 @@
-﻿using BlazorPong.Web.Server.Cache;
-using BlazorPong.Web.Server.EFCore;
-using BlazorPong.Web.Server.Rooms;
-using BlazorPong.Web.Server.Rooms.Games;
+﻿using BlazorPong.SignalR.Cache;
+using BlazorPong.SignalR.EFCore;
+using BlazorPong.SignalR.Rooms;
+using BlazorPong.SignalR.Rooms.Games;
 using BlazorPong.Web.Shared.Clock;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
-namespace BlazorPong.Web.Server;
+namespace BlazorPong.SignalR;
 
 public static class WebApplicationBuilderExtensions
 {
