@@ -6,18 +6,23 @@ services:
     build:
       context: .
       dockerfile: BlazorPong.Web/Server/Dockerfile
+
   signalr:
     image: ${DOCKER_REGISTRY-}blazorpongsignalr
     build:
       context: .
       dockerfile: BlazorPong.SignalR/Dockerfile
+
+  signalr-dapr:
+    image: "daprio/daprd:latest"
+    depends_on:
+      - signalr
+
   redis:
     image: "redis:latest"
+
   azuresql:
     image: "mcr.microsoft.com/azure-sql-edge:latest"
 
-  # blazorpong.web.server.2:
-  #   image: ${DOCKER_REGISTRY-}blazorpongwebserver
-  #   build:
-  #     context: .
-  #     dockerfile: BlazorPong.Web/Server/Dockerfile
+  dapr-dashboard:
+    image: "daprio/dashboard:latest"

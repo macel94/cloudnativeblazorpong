@@ -7,8 +7,6 @@ services:
       - GameHubEndpoint=http://localhost:6351/gamehub
     ports:
       - "6350:8080"
-    # volumes:
-    #   - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
     depends_on:
       - signalr
 
@@ -23,13 +21,24 @@ services:
       - redis
       - azuresql
 
+  signalr-dapr:
+    command: ["./daprd",
+      "-app-id", "signalr",
+      "-app-port", "8080",
+      "-components-path", "/components",
+      "-config", "/configuration/config.yaml"
+      ]
+    volumes:
+      - "./.dapr/components/:/components"
+      - "./.dapr/:/configuration"
+    depends_on:
+      - signalr
+
   redis:
-    image: "redis:latest"
     ports:
       - "6379:6379"
-  
+
   azuresql:
-    image: "mcr.microsoft.com/azure-sql-edge:latest"
     volumes:
       - ./Blazorpong.Database.AzureSql/Snapshots:/backup:ro
     environment:
@@ -39,3 +48,17 @@ services:
       - MSSQL_PACKAGE=/backup/v0.dacpac
     ports:
       - "1433:1433"
+
+  dapr-dashboard:
+    command: [ "--docker-compose=true", 
+      "--components-path=/home/nonroot/components", 
+      "--config-path=/home/nonroot/configuration", 
+      "--docker-compose-path=/home/nonroot/docker-compose.yml" ]
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./.dapr/components/:/home/nonroot/components"
+      - "./.dapr/:/home/nonroot/configuration"
+      - ./docker-compose.yml:/home/nonroot/docker-compose.yml
+
+# send logs to dapr and integrate opentelemetry with something like jaeger or zipkin or prometheus and grafana
