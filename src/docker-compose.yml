@@ -11,6 +11,10 @@ services:
     build:
       context: .
       dockerfile: BlazorPong.SignalR/Dockerfile
+  redis:
+    image: "redis:latest"
+  azuresql:
+    image: "mcr.microsoft.com/azure-sql-edge:latest"
 
   # blazorpong.web.server.2:
   #   image: ${DOCKER_REGISTRY-}blazorpongwebserver

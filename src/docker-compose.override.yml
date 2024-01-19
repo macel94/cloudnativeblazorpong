@@ -4,7 +4,7 @@ services:
   webapp:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - GameHubEndpoint=http://signalr:6351/gamehub
+      - GameHubEndpoint=http://localhost:6351/gamehub
     ports:
       - "6350:8080"
     # volumes:
