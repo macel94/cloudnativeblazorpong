@@ -19,7 +19,6 @@ builder.Services.AddCors(options =>
         });
 });
 
-
 var app = builder.Build();
 app.UseCors("AllowAnyOriginPolicy");
 app.MapHub<GameHub>("/gamehub");

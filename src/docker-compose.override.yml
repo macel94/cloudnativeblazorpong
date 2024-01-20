@@ -4,9 +4,11 @@ services:
   webapp:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - GameHubEndpoint=http://localhost:6351/gamehub
     ports:
       - "6350:8080"
+      - "6401:9090"
     depends_on:
       - signalr
 
@@ -17,6 +19,7 @@ services:
       - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
     ports:
       - "6351:8080"
+      - "6402:9090"
     depends_on:
       - redis
       - azuresql
@@ -61,4 +64,55 @@ services:
       - "./.dapr/:/home/nonroot/configuration"
       - ./docker-compose.yml:/home/nonroot/docker-compose.yml
 
-# send logs to dapr and integrate opentelemetry with something like jaeger or zipkin or prometheus and grafana
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: collector
+    command: [ "--config=/etc/collector.yaml" ]
+    ports:
+      - "4317:4317"
+    volumes:
+      - ./Observability/otel-collector-config.yaml:/etc/collector.yaml
+    depends_on:
+      - tempo
+      - prometheus
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./Observability/tempo.yaml:/etc/tempo.yaml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    depends_on:
+      - collector
+      - tempo
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    command: -config.file=/etc/loki.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./Observability/loki.yaml:/etc/loki.yaml
+    depends_on:
+      - collector
