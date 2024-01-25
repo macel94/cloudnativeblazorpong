@@ -13,9 +13,14 @@ exporters:
       insecure: true
   loki:
     endpoint: "http://loki:3100/loki/api/v1/push"
+    tls:
+      insecure: true
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [logging, otlp, loki]
+      exporters: [otlp]
+    logs:
+      receivers: [otlp]
+      exporters: [logging, loki]

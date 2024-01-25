@@ -1,3 +1,14 @@
+x-logging: &default-logging
+  driver: loki
+  options:
+    loki-url: 'http://localhost:3100/api/prom/push'
+    loki-pipeline-stages: |
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2}'
+          max_wait_time: 3s
+      - regex:
+          expression: '^(?P<time>\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2},d{3}) (?P<message>(?s:.*))$$'
+
 version: '3.8'
 
 services:
@@ -82,6 +93,8 @@ services:
     depends_on:
       - tempo
       - prometheus
+      - loki
+      - signalr
 
   tempo:
     image: grafana/tempo:latest
@@ -89,18 +102,27 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./Observability/tempo.yaml:/etc/tempo.yaml
+    logging: *default-logging
+    ports:
+      - "3200"   # tempo
+      - "4317"  # otlp grpc
+      - "4318"  # otlp http
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    logging: *default-logging
     ports:
       - "3000:3000"
     volumes:
       - ./Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./Observability/dashboards:/etc/grafana/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
     depends_on:
       - collector
       - tempo
@@ -110,6 +132,12 @@ services:
     image: grafana/loki:latest
     container_name: loki
     command: -config.file=/etc/loki.yaml
+    # healthcheck:
+    #     test: wget -q --tries=1 -O- http://localhost:3100/ready 
+    #     interval: 3s
+    #     timeout: 3s
+    #     retries: 10
+    #     start_period: 10s
     ports:
       - "3100:3100"
     volumes:
