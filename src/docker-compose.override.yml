@@ -17,23 +17,27 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - GameHubEndpoint=http://localhost:6351/gamehub
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318
     ports:
       - "6350:8080"
       - "6401:9090"
     depends_on:
       - signalr
+      - collector
 
   signalr:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Redis=redis:6379
       - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318
     ports:
       - "6351:8080"
       - "6402:9090"
     depends_on:
       - redis
       - azuresql
+      - collector
 
   signalr-dapr:
     command: ["./daprd",
@@ -78,7 +82,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     ports:
-      - "9090:9090"
+      - "9090"
     volumes:
       - ./Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
 
@@ -88,13 +92,14 @@ services:
     command: [ "--config=/etc/collector.yaml" ]
     ports:
       - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
     volumes:
       - ./Observability/otel-collector-config.yaml:/etc/collector.yaml
     depends_on:
       - tempo
       - prometheus
       - loki
-      - signalr
 
   tempo:
     image: grafana/tempo:latest
@@ -124,9 +129,9 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
     depends_on:
-      - collector
       - tempo
       - loki
+      - prometheus
 
   loki:
     image: grafana/loki:latest
@@ -142,5 +147,3 @@ services:
       - "3100:3100"
     volumes:
       - ./Observability/loki.yaml:/etc/loki.yaml
-    depends_on:
-      - collector

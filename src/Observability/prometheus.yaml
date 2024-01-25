@@ -4,22 +4,9 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: signalr
-    honor_timestamps: true
-    metrics_path: /metrics
-    scheme: http
+  # - job_name: tempo
+  #   static_configs:
+  #     - targets: [ 'tempo:3200' ]
+  - job_name: collector
     static_configs:
-    - targets:
-      - signalr:9090
-
-  - job_name: webapp
-    honor_timestamps: true
-    metrics_path: /metrics
-    scheme: http
-    static_configs:
-    - targets:
-      - webapp:9090
-  
-  - job_name: tempo
-    static_configs:
-      - targets: [ 'tempo:3200' ]
+      - targets: [ 'collector:8889' ]

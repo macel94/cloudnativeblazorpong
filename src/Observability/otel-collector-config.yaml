@@ -8,13 +8,15 @@ exporters:
   logging:
     loglevel: info
   otlp:
-    endpoint: tempo:4317
+    endpoint: otlp:4317
     tls:
       insecure: true
   loki:
     endpoint: "http://loki:3100/loki/api/v1/push"
     tls:
       insecure: true
+  prometheus:
+     endpoint: "collector:8889"
 
 service:
   pipelines:
@@ -24,3 +26,6 @@ service:
     logs:
       receivers: [otlp]
       exporters: [logging, loki]
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
