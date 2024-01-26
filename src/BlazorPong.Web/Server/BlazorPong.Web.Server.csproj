@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\BlazorPong.Backend.Defaults\BlazorPong.Backend.Defaults.csproj" />
     <ProjectReference Include="..\Client\BlazorPong.Web.Client.csproj" />
     <ProjectReference Include="..\Shared\BlazorPong.Web.Shared.csproj" />
   </ItemGroup>

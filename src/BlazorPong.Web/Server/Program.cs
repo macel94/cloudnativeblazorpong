@@ -1,10 +1,10 @@
-﻿using BlazorPong.Web.Server;
+﻿using BlazorPong.Backend.Defaults;
 using BlazorPong.Web.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddLogging();
+//builder.Services.AddLogging();
 builder.Services.AddRazorPages();
 builder.AddServiceDefaults();
 

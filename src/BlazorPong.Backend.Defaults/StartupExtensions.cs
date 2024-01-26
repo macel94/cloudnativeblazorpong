@@ -1,13 +1,17 @@
-﻿using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-namespace BlazorPong.Web.Server;
+namespace BlazorPong.Backend.Defaults;
 
-public static class WebApplicationBuilderExtensions
+public static class StartupExtensions
 {
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
@@ -22,18 +26,23 @@ public static class WebApplicationBuilderExtensions
     {
         builder.Logging.AddOpenTelemetry(logging =>
         {
+            logging.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
+            logging.AddConsoleExporter();
         });
 
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics =>
             {
+                metrics.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
                 metrics.AddRuntimeInstrumentation()
                        .AddBuiltInMeters();
+                metrics.AddConsoleExporter();
             })
             .WithTracing(tracing =>
             {
+                tracing.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
                 if (builder.Environment.IsDevelopment())
                 {
                     // We want to view all traces in development
@@ -43,6 +52,8 @@ public static class WebApplicationBuilderExtensions
                 tracing.AddAspNetCoreInstrumentation()
                        .AddGrpcClientInstrumentation()
                        .AddHttpClientInstrumentation();
+
+                tracing.AddConsoleExporter();
             });
 
         builder.AddOpenTelemetryExporters();

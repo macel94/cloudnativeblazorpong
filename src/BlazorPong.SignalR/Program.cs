@@ -1,9 +1,10 @@
-﻿using BlazorPong.SignalR;
+﻿using BlazorPong.Backend.Defaults;
+using BlazorPong.SignalR;
 using BlazorPong.SignalR.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddLogging();
+//builder.Services.AddLogging();
 builder.AddRedis();
 builder.AddAzureSql();
 builder.AddHostedServices();

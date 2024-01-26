@@ -8,7 +8,7 @@ exporters:
   logging:
     loglevel: info
   otlp:
-    endpoint: otlp:4317
+    endpoint: tempo:4317
     tls:
       insecure: true
   loki:
@@ -16,7 +16,8 @@ exporters:
     tls:
       insecure: true
   prometheus:
-     endpoint: "collector:8889"
+     send_timestamps: true
+     endpoint: collector:8889
 
 service:
   pipelines:

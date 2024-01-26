@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "BlazorPong.Backend.Defaults": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54052;http://localhost:54053"
+    }
+  }
+}

@@ -30,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BlazorPong.Backend.Defaults\BlazorPong.Backend.Defaults.csproj" />
     <ProjectReference Include="..\BlazorPong.Web\Shared\BlazorPong.Web.Shared.csproj" />
   </ItemGroup>
 </Project>
