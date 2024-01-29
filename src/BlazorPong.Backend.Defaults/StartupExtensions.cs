@@ -29,7 +29,7 @@ public static class StartupExtensions
             logging.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
-            logging.AddConsoleExporter();
+            //logging.AddConsoleExporter();
         });
 
         builder.Services.AddOpenTelemetry()
@@ -38,7 +38,7 @@ public static class StartupExtensions
                 metrics.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
                 metrics.AddRuntimeInstrumentation()
                        .AddBuiltInMeters();
-                metrics.AddConsoleExporter();
+                //metrics.AddConsoleExporter();
             })
             .WithTracing(tracing =>
             {
@@ -53,7 +53,7 @@ public static class StartupExtensions
                        .AddGrpcClientInstrumentation()
                        .AddHttpClientInstrumentation();
 
-                tracing.AddConsoleExporter();
+                //tracing.AddConsoleExporter();
             });
 
         builder.AddOpenTelemetryExporters();
