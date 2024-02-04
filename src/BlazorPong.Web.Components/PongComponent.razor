@@ -362,7 +362,7 @@
         }
     }
 
-    private async Task GetOrInitializeGameObjects()
+    private async Task GetGameObjects()
     {
         // Chiedo al server la posizione di ogni oggetto e aspetto la risposta
         GameObjectsDict = await Connection!.InvokeAsync<Dictionary<string, GameObject?>>(nameof(IGameHub.GetGameObjects), RoomId);
@@ -444,7 +444,7 @@
         try
         {
             _playerType = await Connection!.InvokeAsync<Roles>(nameof(IGameHub.OpenRoom), RoomId, username);
-            await ManageEnteredPlayerTypeAssigned();
+            await ManagePlayerTypeAssigned();
         }
         catch (Exception ex)
         {
@@ -460,7 +460,7 @@
             NavigationManager.NavigateTo($"/room/{RoomId}/pong");
             // Get what type of player the current user will be
             _playerType = await Connection!.InvokeAsync<Roles>(nameof(IGameHub.JoinRoom), RoomId, username);
-            await ManageEnteredPlayerTypeAssigned();
+            await ManagePlayerTypeAssigned();
         }
         else
         {
@@ -469,12 +469,12 @@
         }
     }
 
-    private async Task ManageEnteredPlayerTypeAssigned()
+    private async Task ManagePlayerTypeAssigned()
     {
         Logger.LogInformation($"Player type: {_playerType}");
 
         PlayerTypeMessage = $"Your role is: {_playerType.ToString()}";
 
-        await GetOrInitializeGameObjects();
+        await GetGameObjects();
     }
 }

@@ -1,22 +1,18 @@
 ﻿#player1 {
     background-color: red;
-    width: 2%;
-    height: 15%;
     position: absolute;
 }
 
 #player2 {
     background-color: green;
-    width: 2%;
-    height: 15%;
     position: absolute;
 }
 
 #ball {
     background-color: blue;
-    width: 2%;
-    height:4%;
     position: absolute;
+    /*transition: top 0.03s, left 0.03s;*/
+    transition: transform 0.03s linear;
 }
 
 #gamearea {
