@@ -1,4 +1,5 @@
-﻿using BlazorPong.SignalR.Cache;
+﻿using AspNetCore.SignalR.OpenTelemetry;
+using BlazorPong.SignalR.Cache;
 using BlazorPong.SignalR.EFCore;
 using BlazorPong.SignalR.Rooms;
 using BlazorPong.SignalR.Rooms.Games;
@@ -15,6 +16,7 @@ public static class WebApplicationBuilderExtensions
     {
         var redisCs = builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis CS is missing");
         builder.Services.AddSignalR()
+            .AddHubInstrumentation()
             .AddStackExchangeRedis(redisCs,
             options =>
             {

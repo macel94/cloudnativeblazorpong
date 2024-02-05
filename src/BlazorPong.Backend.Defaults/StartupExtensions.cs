@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using AspNetCore.SignalR.OpenTelemetry;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -29,31 +30,29 @@ public static class StartupExtensions
             logging.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
-            //logging.AddConsoleExporter();
         });
 
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics =>
             {
                 metrics.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
-                metrics.AddRuntimeInstrumentation()
-                       .AddBuiltInMeters();
-                //metrics.AddConsoleExporter();
+                metrics.AddAspNetCoreInstrumentation()
+                       .AddHttpClientInstrumentation()
+                       .AddRuntimeInstrumentation()
+                       .AddProcessInstrumentation();
             })
             .WithTracing(tracing =>
             {
                 tracing.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName));
                 if (builder.Environment.IsDevelopment())
                 {
-                    // We want to view all traces in development
                     tracing.SetSampler(new AlwaysOnSampler());
                 }
 
                 tracing.AddAspNetCoreInstrumentation()
+                       .AddSignalRInstrumentation()
                        .AddGrpcClientInstrumentation()
                        .AddHttpClientInstrumentation();
-
-                //tracing.AddConsoleExporter();
             });
 
         builder.AddOpenTelemetryExporters();
