@@ -30,11 +30,11 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./src
-        file: ./src/BlazorPong.Web/Server/Dockerfile
+        file: ./src/BlazorPong.SignalR/Dockerfile
         push: true
         tags: |
-          ghcr.io/${{ github.repository }}/blazorpong-web:latest
-          ghcr.io/${{ github.repository }}/blazorpong-web:${{ github.sha }}
+          ghcr.io/${{ github.repository }}/blazorpong-signalr:latest
+          ghcr.io/${{ github.repository }}/blazorpong-signalr:${{ github.sha }}
 
     # - name: Create GitHub release
     #   id: create_release

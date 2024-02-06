@@ -9,11 +9,11 @@
 #       - regex:
 #           expression: '^(?P<time>\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2},d{3}) (?P<message>(?s:.*))$$'
 
-version: '3.8'
+version: '3'
 
 services:
   webapp:
-    image: ${DOCKER_REGISTRY-}blazorpongwebserver
+    image: ${DOCKER_REGISTRY-}blazorpong-web
     container_name: webapp
     build:
       context: .
@@ -34,7 +34,7 @@ services:
       - collector
 
   signalr:
-    image: ${DOCKER_REGISTRY-}blazorpongsignalr
+    image: ${DOCKER_REGISTRY-}blazorpong-signalr
     container_name: signalr
     build:
       context: .
