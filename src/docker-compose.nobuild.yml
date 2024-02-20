@@ -1,0 +1,161 @@
+# x-logging: &default-logging
+#   driver: loki
+#   options:
+#     loki-url: 'http://localhost:3100/api/prom/push'
+#     loki-pipeline-stages: |
+#       - multiline:
+#           firstline: '^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2}'
+#           max_wait_time: 3s
+#       - regex:
+#           expression: '^(?P<time>\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2},d{3}) (?P<message>(?s:.*))$$'
+
+version: '3'
+
+services:
+  webapp:
+    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web
+    container_name: webapp
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - GameHubEndpoint=http://localhost:6351/gamehub
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=webapp
+
+    ports:
+      - "6350:8080"
+      - "6401:9090"
+    depends_on:
+      - signalr
+      - collector
+
+  signalr:
+    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr
+    container_name: signalr
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=signalr
+    ports:
+      - "6351:8080"
+      - "6402:9090"
+    depends_on:
+      - redis
+      - azuresql
+      - collector
+
+  signalr-dapr:
+    container_name: signalr-dapr
+    image: "daprio/daprd:latest"
+    command: ["./daprd",
+      "-app-id", "signalr",
+      "-app-port", "8080",
+      "-components-path", "/components",
+      "-config", "/configuration/config.yaml"
+      ]
+    volumes:
+      - "./.dapr/components/:/components"
+      - "./.dapr/:/configuration"
+    depends_on:
+      - signalr
+
+  redis:
+    image: "redis:latest"
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  azuresql:
+    image: "mcr.microsoft.com/azure-sql-edge:latest"
+    container_name: azuresql
+    volumes:
+      - ./Blazorpong.Database.AzureSql/Snapshots:/backup:ro
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=yourStrong(!)Password
+      - MSSQL_PID=Developer
+      - MSSQL_PACKAGE=/backup/v0.dacpac
+    ports:
+      - "1433:1433"
+
+  dapr-dashboard:
+    image: "daprio/dashboard:latest"
+    container_name: dapr-dashboard
+    command: [ "--docker-compose=true", 
+      "--components-path=/home/nonroot/components", 
+      "--config-path=/home/nonroot/configuration", 
+      "--docker-compose-path=/home/nonroot/docker-compose.yml" ]
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./.dapr/components/:/home/nonroot/components"
+      - "./.dapr/:/home/nonroot/configuration"
+      - ./docker-compose.yml:/home/nonroot/docker-compose.yml
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090"
+    volumes:
+      - ./Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: collector
+    command: [ "--config=/etc/collector.yaml" ]
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889"
+    volumes:
+      - ./Observability/otel-collector-config.yaml:/etc/collector.yaml
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./Observability/tempo.yaml:/etc/tempo.yaml
+    # logging: *default-logging
+    ports:
+      - "3200"   # tempo
+      - "4317"  # otlp grpc
+      - "4318"  # otlp http
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    # logging: *default-logging
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./Observability/dashboards:/etc/grafana/dashboards
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    command: -config.file=/etc/loki.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./Observability/loki.yaml:/etc/loki.yaml
