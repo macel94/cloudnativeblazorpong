@@ -10,7 +10,6 @@
     <DockerServiceName>webapp</DockerServiceName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAOT|AnyCPU'" />
   <ItemGroup>
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
