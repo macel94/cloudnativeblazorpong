@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Users\FrancescoBelacca\AppData\Local\Microsoft\WinGet\Packages\Kubernetes.kompose_Microsoft.Winget.Source_8wekyb3d8bbwe\kompose.exe convert -c -f C:\Users\FrancescoBelacca\source\repos\cloudnativeblazorpong\src\docker-compose.yml -o .
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: signalr
+  name: signalr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: signalr
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Users\FrancescoBelacca\AppData\Local\Microsoft\WinGet\Packages\Kubernetes.kompose_Microsoft.Winget.Source_8wekyb3d8bbwe\kompose.exe convert -c -f C:\Users\FrancescoBelacca\source\repos\cloudnativeblazorpong\src\docker-compose.yml -o .
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/src-default: "true"
+        io.kompose.service: signalr
+    spec:
+      containers:
+        - env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ConnectionStrings__AzureSql
+              value: Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+            - name: ConnectionStrings__Redis
+              value: redis:6379
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://collector:4317
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: grpc
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=signalr
+          image: blazorpong-signalr
+          name: signalr
+          ports:
+            - containerPort: 8080
+              hostPort: 6351
+              protocol: TCP
+            - containerPort: 9090
+              hostPort: 6402
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}

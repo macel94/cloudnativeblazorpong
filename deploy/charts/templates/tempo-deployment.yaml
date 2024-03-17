@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Users\FrancescoBelacca\AppData\Local\Microsoft\WinGet\Packages\Kubernetes.kompose_Microsoft.Winget.Source_8wekyb3d8bbwe\kompose.exe convert -c -f C:\Users\FrancescoBelacca\source\repos\cloudnativeblazorpong\src\docker-compose.yml -o .
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: tempo
+  name: tempo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: tempo
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Users\FrancescoBelacca\AppData\Local\Microsoft\WinGet\Packages\Kubernetes.kompose_Microsoft.Winget.Source_8wekyb3d8bbwe\kompose.exe convert -c -f C:\Users\FrancescoBelacca\source\repos\cloudnativeblazorpong\src\docker-compose.yml -o .
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/src-default: "true"
+        io.kompose.service: tempo
+    spec:
+      containers:
+        - args:
+            - -config.file=/etc/tempo.yaml
+          image: grafana/tempo:latest
+          name: tempo
+          ports:
+            - containerPort: 3200
+              protocol: TCP
+            - containerPort: 4317
+              protocol: TCP
+            - containerPort: 4318
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}

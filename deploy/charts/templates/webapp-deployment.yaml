@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Users\FrancescoBelacca\AppData\Local\Microsoft\WinGet\Packages\Kubernetes.kompose_Microsoft.Winget.Source_8wekyb3d8bbwe\kompose.exe convert -c -f C:\Users\FrancescoBelacca\source\repos\cloudnativeblazorpong\src\docker-compose.yml -o .
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: webapp
+  name: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: webapp
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Users\FrancescoBelacca\AppData\Local\Microsoft\WinGet\Packages\Kubernetes.kompose_Microsoft.Winget.Source_8wekyb3d8bbwe\kompose.exe convert -c -f C:\Users\FrancescoBelacca\source\repos\cloudnativeblazorpong\src\docker-compose.yml -o .
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/src-default: "true"
+        io.kompose.service: webapp
+    spec:
+      containers:
+        - env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+              value: "true"
+            - name: GameHubEndpoint
+              value: http://localhost:6351/gamehub
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://collector:4317
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: grpc
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=webapp
+          image: blazorpong-web
+          name: webapp
+          ports:
+            - containerPort: 8080
+              hostPort: 6350
+              protocol: TCP
+            - containerPort: 9090
+              hostPort: 6401
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}
