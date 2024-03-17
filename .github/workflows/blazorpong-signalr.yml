@@ -1,4 +1,4 @@
-name: Build and Push Blazorpong Web Docker Image
+name: Build and Push Blazorpong SignalR Docker Image
 
 on:
   push:
