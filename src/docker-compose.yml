@@ -54,20 +54,20 @@ services:
       - azuresql
       - collector
 
-  signalr-dapr:
-    container_name: signalr-dapr
-    image: "daprio/daprd:latest"
-    command: ["./daprd",
-      "-app-id", "signalr",
-      "-app-port", "8080",
-      "-components-path", "/components",
-      "-config", "/configuration/config.yaml"
-      ]
-    volumes:
-      - "./.dapr/components/:/components"
-      - "./.dapr/:/configuration"
-    depends_on:
-      - signalr
+  # signalr-dapr:
+  #   container_name: signalr-dapr
+  #   image: "daprio/daprd:latest"
+  #   command: ["./daprd",
+  #     "-app-id", "signalr",
+  #     "-app-port", "8080",
+  #     "-components-path", "/components",
+  #     "-config", "/configuration/config.yaml"
+  #     ]
+  #   volumes:
+  #     - "./.dapr/components/:/components"
+  #     - "./.dapr/:/configuration"
+  #   depends_on:
+  #     - signalr
 
   redis:
     image: "redis:latest"
