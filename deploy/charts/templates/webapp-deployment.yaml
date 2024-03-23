@@ -9,7 +9,7 @@ metadata:
     io.kompose.service: webapp
   name: webapp
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       io.kompose.service: webapp
@@ -31,7 +31,7 @@ spec:
             - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
               value: "true"
             - name: GameHubEndpoint
-              value: http://localhost:6351/gamehub
+              value: /gamehub
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://collector:4317
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
