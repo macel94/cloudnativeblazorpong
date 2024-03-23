@@ -36,5 +36,5 @@ jobs:
       run: |
         CHART_FILE=$(ls *.tgz)
         echo "Chart file: $CHART_FILE"
-        helm push $CHART_FILE oci://ghcr.io/${{ github.repository }}/cloudnativeblazorpong:${{ github.sha }}
-        helm push $CHART_FILE oci://ghcr.io/${{ github.repository }}/cloudnativeblazorpong:latest
+        helm push $CHART_FILE oci://ghcr.io/${{ github.repository }}:${{ github.sha }}
+        helm push $CHART_FILE oci://ghcr.io/${{ github.repository }}:latest
