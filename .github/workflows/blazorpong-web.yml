@@ -3,6 +3,9 @@ name: Build and Push Blazorpong Web Docker Image
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/blazorpong-web.yml'
 
 permissions:
     contents: read

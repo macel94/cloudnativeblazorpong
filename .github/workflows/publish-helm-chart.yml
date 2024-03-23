@@ -30,7 +30,7 @@ jobs:
 
     - name: Package Helm Chart
       run: |
-        helm package deploy/charts --version ${{ github.sha }}
+        helm package deploy/charts --version 1.0.0-${{ github.sha }}
 
     - name: Publish Chart to GHCR
       run: |

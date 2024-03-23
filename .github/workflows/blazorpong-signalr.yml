@@ -3,6 +3,9 @@ name: Build and Push Blazorpong SignalR Docker Image
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/blazorpong-signalr.yml'
 
 permissions:
     contents: read
