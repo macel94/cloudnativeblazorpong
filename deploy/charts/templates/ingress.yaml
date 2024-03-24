@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/enable-http2: "true"
+    nginx.ingress.kubernetes.io/enable-websocket: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: / # Assuming the app serves from the root
+        pathType: Prefix
+        backend:
+          service:
+            name: webapp
+            port:
+              number: 6350
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: webapp
+            port:
+              number: 6401
