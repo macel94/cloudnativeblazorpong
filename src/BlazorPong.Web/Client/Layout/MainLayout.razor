@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.FluentUI.AspNetCore.Components.Extensions
+@inherits LayoutComponentBase
 <FluentDesignTheme @bind-Mode="@Mode"
                    OfficeColor="@OfficeColor"
                    OfficeColorChanged="@(e => { OfficeColor = e ?? OfficeColor.Default; StateHasChanged(); })"
@@ -70,7 +71,7 @@
 
 @code
 {
-    public DesignThemeModes Mode { get; set; }
+    DesignThemeModes Mode { get; set; }
 
-    public OfficeColor OfficeColor { get; set; }
+    OfficeColor OfficeColor { get; set; }
 }

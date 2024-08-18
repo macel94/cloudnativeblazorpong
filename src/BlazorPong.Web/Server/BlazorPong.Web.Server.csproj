@@ -12,15 +12,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.2" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.7" />
 
-    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.7.0-beta.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.7.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.7.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.7.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.7.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="*-*" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="*" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="*" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="*" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="*" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="*" />
   </ItemGroup>
 
   <ItemGroup>

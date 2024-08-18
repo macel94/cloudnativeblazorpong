@@ -9,7 +9,7 @@
 #       - regex:
 #           expression: '^(?P<time>\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2},d{3}) (?P<message>(?s:.*))$$'
 
-version: '3'
+# version: '3'
 
 services:
   webapp:
@@ -64,8 +64,8 @@ services:
   #     "-config", "/configuration/config.yaml"
   #     ]
   #   volumes:
-  #     - "./.dapr/components/:/components"
-  #     - "./.dapr/:/configuration"
+  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/components/:/components"
+  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/:/configuration"
   #   depends_on:
   #     - signalr
 
@@ -79,7 +79,7 @@ services:
     image: "mcr.microsoft.com/azure-sql-edge:latest"
     container_name: azuresql
     volumes:
-      - ./Blazorpong.Database.AzureSql/Snapshots:/backup:ro
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Blazorpong.Database.AzureSql/Snapshots:/backup:ro
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
@@ -88,19 +88,19 @@ services:
     ports:
       - "1433:1433"
 
-  dapr-dashboard:
-    image: "daprio/dashboard:latest"
-    container_name: dapr-dashboard
-    command: [ "--docker-compose=true", 
-      "--components-path=/home/nonroot/components", 
-      "--config-path=/home/nonroot/configuration", 
-      "--docker-compose-path=/home/nonroot/docker-compose.yml" ]
-    ports:
-      - "8080:8080"
-    volumes:
-      - "./.dapr/components/:/home/nonroot/components"
-      - "./.dapr/:/home/nonroot/configuration"
-      - ./docker-compose.yml:/home/nonroot/docker-compose.yml
+  # dapr-dashboard:
+  #   image: "daprio/dashboard:latest"
+  #   container_name: dapr-dashboard
+  #   command: [ "--docker-compose=true", 
+  #     "--components-path=/home/nonroot/components", 
+  #     "--config-path=/home/nonroot/configuration", 
+  #     "--docker-compose-path=/home/nonroot/docker-compose.yml" ]
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/components/:/home/nonroot/components"
+  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/:/home/nonroot/configuration"
+  #     - ${LOCAL_WORKSPACE_FOLDER}/src/docker-compose.yml:/home/nonroot/docker-compose.yml
 
   prometheus:
     image: prom/prometheus:latest
@@ -108,7 +108,7 @@ services:
     ports:
       - "9090"
     volumes:
-      - ./Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
 
   collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -119,7 +119,7 @@ services:
       - "4318:4318"
       - "8889"
     volumes:
-      - ./Observability/otel-collector-config.yaml:/etc/collector.yaml
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/otel-collector-config.yaml:/etc/collector.yaml
     depends_on:
       - tempo
       - prometheus
@@ -130,7 +130,7 @@ services:
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - ./Observability/tempo.yaml:/etc/tempo.yaml
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/tempo.yaml:/etc/tempo.yaml
     # logging: *default-logging
     ports:
       - "3200"   # tempo
@@ -144,9 +144,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ./Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ./Observability/dashboards:/etc/grafana/dashboards
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/dashboards:/etc/grafana/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -164,4 +164,4 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ./Observability/loki.yaml:/etc/loki.yaml
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/loki.yaml:/etc/loki.yaml
