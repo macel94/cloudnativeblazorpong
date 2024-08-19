@@ -80,7 +80,7 @@ services:
     container_name: azuresql
     restart: unless-stopped
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup
+      - ${LOCAL_WORKSPACE_FOLDER}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
