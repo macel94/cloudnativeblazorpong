@@ -35,7 +35,7 @@
 #     environment:
 #       - ASPNETCORE_ENVIRONMENT=Development
 #       - ConnectionStrings__Redis=redis:6379
-#       - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.Database.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+#       - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.DB.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
 #       - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318
 #     ports:
 #       - "6351:8080"
@@ -67,12 +67,12 @@
 #   azuresql:
 #     image: "mcr.microsoft.com/azure-sql-edge:latest"
 #     volumes:
-#       - ./Blazorpong.Database.AzureSql/Snapshots:/backup:ro
+#       - ./Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
 #     environment:
 #       - ACCEPT_EULA=Y
 #       - MSSQL_SA_PASSWORD=yourStrong(!)Password
 #       - MSSQL_PID=Developer
-#       - MSSQL_PACKAGE=/backup/v0.dacpac
+#       - MSSQL_PACKAGE=/backup/Blazorpong.DB.AzureSql.dacpac
 #     ports:
 #       - "1433:1433"
 

@@ -1,4 +1,4 @@
-﻿CREATE TABLE [dbo].[Client]
+CREATE TABLE [dbo].[Client]
 (
     [Username] NVARCHAR(50) NOT NULL,
     [RoomId] UNIQUEIDENTIFIER NOT NULL,

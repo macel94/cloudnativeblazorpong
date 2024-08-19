@@ -1,5 +1,5 @@
-﻿CREATE TABLE [dbo].[Room]
+CREATE TABLE [dbo].[Room]
 (
 	[Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(), 
-    [ServerName] NVARCHAR(50) NULL 
+  [ServerName] NVARCHAR(50) NULL 
 )
