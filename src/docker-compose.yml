@@ -54,26 +54,20 @@ services:
       - azuresql
       - collector
 
-  # signalr-dapr:
-  #   container_name: signalr-dapr
-  #   image: "daprio/daprd:latest"
-  #   command: ["./daprd",
-  #     "-app-id", "signalr",
-  #     "-app-port", "8080",
-  #     "-components-path", "/components",
-  #     "-config", "/configuration/config.yaml"
-  #     ]
-  #   volumes:
-  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/components/:/components"
-  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/:/configuration"
-  #   depends_on:
-  #     - signalr
-
   redis:
     image: "redis:latest"
     container_name: redis
     ports:
       - "6379:6379"
+
+  # not usable until .net 9 comes out with the fix that lets garnet be useful even without lua scripting: https://github.com/microsoft/garnet/issues/85
+  # redis:
+  #   image: "ghcr.io/microsoft/garnet:latest"
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - garnetdata:/data
 
   azuresql:
     image: mcr.microsoft.com/azure-sql-edge
@@ -88,20 +82,6 @@ services:
       - MSSQL_PACKAGE=/backup/Blazorpong.DB.AzureSql.dacpac
     ports:
       - "1433:1433"
-
-  # dapr-dashboard:
-  #   image: "daprio/dashboard:latest"
-  #   container_name: dapr-dashboard
-  #   command: [ "--docker-compose=true", 
-  #     "--components-path=/home/nonroot/components", 
-  #     "--config-path=/home/nonroot/configuration", 
-  #     "--docker-compose-path=/home/nonroot/docker-compose.yml" ]
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/components/:/home/nonroot/components"
-  #     - "${LOCAL_WORKSPACE_FOLDER}/src/.dapr/:/home/nonroot/configuration"
-  #     - ${LOCAL_WORKSPACE_FOLDER}/src/docker-compose.yml:/home/nonroot/docker-compose.yml
 
   prometheus:
     image: prom/prometheus:latest
@@ -166,3 +146,6 @@ services:
       - "3100:3100"
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/loki.yaml:/etc/loki.yaml
+
+volumes:
+  garnetdata:
