@@ -11,13 +11,40 @@
 
 # version: '3'
 
+networks:
+  blazorpong-network:
+    driver: bridge
+
 services:
+  traefik:
+    image: "traefik:v3.1"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - blazorpong-network
+    depends_on:
+      - webapp
+      - signalr
+      - grafana
+
   webapp:
     image: ${DOCKER_REGISTRY-}blazorpong-web
     container_name: webapp
     build:
       context: .
       dockerfile: BlazorPong.Web/Server/Dockerfile
+    networks:
+      - blazorpong-network
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
@@ -36,6 +63,8 @@ services:
   signalr:
     image: ${DOCKER_REGISTRY-}blazorpong-signalr
     container_name: signalr
+    networks:
+      - blazorpong-network
     build:
       context: .
       dockerfile: BlazorPong.SignalR/Dockerfile
@@ -55,6 +84,8 @@ services:
       - collector
 
   redis:
+    networks:
+      - blazorpong-network
     image: "redis:latest"
     container_name: redis
     ports:
@@ -68,8 +99,12 @@ services:
   #     - "6379:6379"
   #   volumes:
   #     - garnetdata:/data
+  # volumes:
+  #   garnetdata:
 
   azuresql:
+    networks:
+      - blazorpong-network
     image: mcr.microsoft.com/azure-sql-edge
     container_name: azuresql
     restart: unless-stopped
@@ -84,6 +119,8 @@ services:
       - "1433:1433"
 
   prometheus:
+    networks:
+      - blazorpong-network
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
@@ -92,6 +129,8 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
 
   collector:
+    networks:
+      - blazorpong-network
     image: otel/opentelemetry-collector-contrib:latest
     container_name: collector
     command: [ "--config=/etc/collector.yaml" ]
@@ -107,6 +146,8 @@ services:
       - loki
 
   tempo:
+    networks:
+      - blazorpong-network
     image: grafana/tempo:latest
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
@@ -119,6 +160,8 @@ services:
       - "4318"  # otlp http
 
   grafana:
+    networks:
+      - blazorpong-network
     image: grafana/grafana:latest
     container_name: grafana
     # logging: *default-logging
@@ -137,8 +180,15 @@ services:
       - tempo
       - loki
       - prometheus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`localhost`) && PathPrefix(`/grafana`)"
+      - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
+      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
 
   loki:
+    networks:
+      - blazorpong-network
     image: grafana/loki:latest
     container_name: loki
     command: -config.file=/etc/loki.yaml
@@ -146,6 +196,3 @@ services:
       - "3100:3100"
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/loki.yaml:/etc/loki.yaml
-
-volumes:
-  garnetdata:
