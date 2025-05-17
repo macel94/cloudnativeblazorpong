@@ -45,20 +45,6 @@
 #       - azuresql
 #       - collector
 
-#   signalr-dapr:
-#     image: "daprio/daprd:latest"
-#     command: ["./daprd",
-#       "-app-id", "signalr",
-#       "-app-port", "8080",
-#       "-components-path", "/components",
-#       "-config", "/configuration/config.yaml"
-#       ]
-#     volumes:
-#       - "./.dapr/components/:/components"
-#       - "./.dapr/:/configuration"
-#     depends_on:
-#       - signalr
-
 #   redis:
 #     image: "redis:latest"
 #     ports:
@@ -75,19 +61,6 @@
 #       - MSSQL_PACKAGE=/backup/Blazorpong.DB.AzureSql.dacpac
 #     ports:
 #       - "1433:1433"
-
-#   dapr-dashboard:
-#     image: "daprio/dashboard:latest"
-#     command: [ "--docker-compose=true", 
-#       "--components-path=/home/nonroot/components", 
-#       "--config-path=/home/nonroot/configuration", 
-#       "--docker-compose-path=/home/nonroot/docker-compose.yml" ]
-#     ports:
-#       - "8080:8080"
-#     volumes:
-#       - "./.dapr/components/:/home/nonroot/components"
-#       - "./.dapr/:/home/nonroot/configuration"
-#       - ./docker-compose.yml:/home/nonroot/docker-compose.yml
 
 #   prometheus:
 #     image: prom/prometheus:latest
