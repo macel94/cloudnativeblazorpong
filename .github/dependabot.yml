@@ -13,7 +13,7 @@ updates:
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
-    directory: "/.github/workflows" # Check the .github/workflows directory
+    directory: "/" # Following the docs https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
     schedule:
       interval: "daily"
     # Group all GitHub Actions updates into a single PR
@@ -24,15 +24,9 @@ updates:
 
   # Enable version updates for Docker
   - package-ecosystem: "docker"
-    directory: "/src/BlazorPong.SignalR" # Dockerfile in BlazorPong.SignalR
-    schedule:
-      interval: "daily"
-    groups:
-      docker-updates: # Group Docker updates
-        patterns:
-          - "*"
-  - package-ecosystem: "docker"
-    directory: "/src/BlazorPong.Web/Server" # Dockerfile in BlazorPong.Web/Server
+    directories: 
+      - "/src/BlazorPong.SignalR" # Dockerfile in BlazorPong.SignalR
+      - "/src/BlazorPong.Web/Server" # Dockerfile in BlazorPong.Web/Server
     schedule:
       interval: "daily"
     groups:
