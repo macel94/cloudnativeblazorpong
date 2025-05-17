@@ -11,31 +11,29 @@
 			// "moby": "${templateOption:moby}"
 		},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
-        "ghcr.io/devcontainers/features/azure-cli:1": {}
+		"ghcr.io/devcontainers/features/azure-cli:1": {},
+		// NPM
+		"ghcr.io/devcontainers/features/node:1": {}
 	},
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-dotnettools.csdevkit",
-				"ms-mssql.mssql"
+				"ms-mssql.mssql",
+				"ms-playwright.playwright"
 			]
 		}
 	},
-
 	// Use this environment variable if you need to bind mount your local source code into a new container.
 	"remoteEnv": {
 		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
 	},
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [6350, 6401, 6351, 6402, 6379, 1433, 8080, 9090, 4317, 4318, 3000, 3100, 3200, 8889],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
-
 	// Configure tool-specific properties.
 	// "customizations": {},
-
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	"remoteUser": "root"
 }
