@@ -5,8 +5,8 @@ receivers:
       http:
 
 exporters:
-  logging:
-    loglevel: info
+  debug: # Changed from logging to debug
+    verbosity: detailed # debug exporter uses verbosity, not loglevel. 'detailed' is similar to 'info'
   otlp/tempo:
     endpoint: tempo:4317
     tls:
@@ -27,4 +27,4 @@ service:
       exporters: [prometheus]
     logs:
       receivers: [otlp/app]
-      exporters: [logging, loki]
+      exporters: [debug, loki] # Changed from logging to debug

@@ -1,4 +1,3 @@
-
 auth_enabled: false
 
 server:
@@ -14,10 +13,16 @@ common:
 
 schema_config:
   configs:
-  - from: 2020-05-15
-    store: boltdb-shipper
+  - from: 2024-01-01 # Updated from date for new schema
+    store: tsdb      # Changed from boltdb-shipper to tsdb
     object_store: filesystem
-    schema: v11
+    schema: v13      # Updated schema to v13
     index:
       prefix: index_
       period: 24h
+
+# Added limits_config to potentially disable structured metadata if needed,
+# but the primary fix is updating the schema above.
+# If issues persist with v13 and tsdb, uncommenting the line below might be a temporary workaround.
+# limits_config:
+#   allow_structured_metadata: false
