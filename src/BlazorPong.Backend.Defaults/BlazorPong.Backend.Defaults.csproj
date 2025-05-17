@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,14 +8,14 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="*-*" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="0.5.0-beta.4" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="0.5.0-beta.7" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="*" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="*" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="*" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="*" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="*" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="*" />
-    <PackageReference Include="AspNetCore.SignalR.OpenTelemetry" Version="1.1.1" />
+    <PackageReference Include="AspNetCore.SignalR.OpenTelemetry" Version="1.7.0" />
     <PackageReference Include="OpenTelemetry.Api" Version="*" />
   </ItemGroup>
 
