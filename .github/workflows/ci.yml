@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Start services with Docker Compose
-        run: docker-compose -f src/docker-compose.yml up -d
+        run: docker compose -f src/docker-compose.yml up -d
 
       - name: Wait for webapp and check health
         run: |
@@ -43,12 +43,12 @@ jobs:
 
           echo "Timeout: Webapp did not become healthy at $WEBAPP_URL after $MAX_WAIT_SECONDS seconds. Last status: $STATUS_CODE"
           echo "Dumping Docker logs..."
-          docker-compose -f src/docker-compose.yml logs
+          docker compose -f src/docker-compose.yml logs
           exit 1
 
       - name: Show Docker logs if any step failed
         if: failure()
         run: |
           echo "Dumping Docker logs due to failure..."
-          docker-compose -f src/docker-compose.yml logs
+          docker compose -f src/docker-compose.yml logs
         continue-on-error: true # Ensure this step runs even if previous ones failed
