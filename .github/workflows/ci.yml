@@ -1,0 +1,51 @@
+name: CI BlazorPong
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-application:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start services with Docker Compose
+        run: docker-compose -f src/docker-compose.yml up -d
+        working-directory: /workspaces/cloudnativeblazorpong # Assuming actions/checkout checks out to a dir named after the repo
+
+      - name: Wait for webapp and check health
+        run: |
+          echo "Waiting for services to start..."
+          MAX_WAIT_SECONDS=180 # Wait for a maximum of 3 minutes
+          INTERVAL_SECONDS=10
+          ELAPSED_SECONDS=0
+          WEBAPP_URL="http://localhost:6350" # Port 6350 is mapped from webapp:8080
+
+          while [ $ELAPSED_SECONDS -lt $MAX_WAIT_SECONDS ]; do
+            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $WEBAPP_URL || echo "000")
+            if [ "$STATUS_CODE" -eq 200 ]; then
+              echo "Webapp is up and running! Received status $STATUS_CODE from $WEBAPP_URL."
+              exit 0
+            fi
+            echo "Webapp not ready (status: $STATUS_CODE from $WEBAPP_URL). Retrying in $INTERVAL_SECONDS seconds..."
+            sleep $INTERVAL_SECONDS
+            ELAPSED_SECONDS=$((ELAPSED_SECONDS + INTERVAL_SECONDS))
+          done
+
+          echo "Timeout: Webapp did not become healthy at $WEBAPP_URL after $MAX_WAIT_SECONDS seconds. Last status: $STATUS_CODE"
+          echo "Dumping Docker logs..."
+          docker-compose -f src/docker-compose.yml logs
+          exit 1
+        working-directory: /workspaces/cloudnativeblazorpong
+
+      - name: Show Docker logs if any step failed
+        if: failure()
+        run: |
+          echo "Dumping Docker logs due to failure..."
+          docker-compose -f src/docker-compose.yml logs
+        working-directory: /workspaces/cloudnativeblazorpong
+        continue-on-error: true # Ensure this step runs even if previous ones failed
