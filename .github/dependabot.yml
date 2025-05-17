@@ -24,11 +24,18 @@ updates:
 
   # Enable version updates for Docker
   - package-ecosystem: "docker"
-    directory: "/src" # Check for Dockerfiles in the src directory and subdirectories
+    directory: "/src/BlazorPong.SignalR" # Dockerfile in BlazorPong.SignalR
     schedule:
       interval: "daily"
-    # Group all Docker updates into a single PR
     groups:
-      docker-updates:
+      docker-updates: # Group Docker updates
+        patterns:
+          - "*"
+  - package-ecosystem: "docker"
+    directory: "/src/BlazorPong.Web/Server" # Dockerfile in BlazorPong.Web/Server
+    schedule:
+      interval: "daily"
+    groups:
+      docker-updates: # Group Docker updates
         patterns:
           - "*"
