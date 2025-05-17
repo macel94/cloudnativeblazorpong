@@ -46,6 +46,38 @@ jobs:
           docker compose -f src/docker-compose.yml logs
           exit 1
 
+      - name: Wait for all services to be up and running
+        run: |
+          echo "Waiting for all services to be up and running..."
+          MAX_WAIT_SECONDS=300 # Wait for a maximum of 5 minutes
+          INTERVAL_SECONDS=10
+          ELAPSED_SECONDS=0
+
+          while [ $ELAPSED_SECONDS -lt $MAX_WAIT_SECONDS ]; do
+            WEBAPP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6350 || echo "000")
+            SIGNALR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6351 || echo "000")
+            if [ "$WEBAPP_STATUS" -eq 200 ] && [ "$SIGNALR_STATUS" -eq 200 ]; then
+              echo "All services are up and running! Webapp status: $WEBAPP_STATUS, SignalR status: $SIGNALR_STATUS."
+              exit 0
+            fi
+            echo "Services not ready. Webapp status: $WEBAPP_STATUS, SignalR status: $SIGNALR_STATUS. Retrying in $INTERVAL_SECONDS seconds..."
+            sleep $INTERVAL_SECONDS
+            ELAPSED_SECONDS=$((ELAPSED_SECONDS + INTERVAL_SECONDS))
+          done
+
+          echo "Timeout: Not all services became healthy after $MAX_WAIT_SECONDS seconds."
+          echo "Dumping Docker logs..."
+          docker compose -f src/docker-compose.yml logs
+          exit 1
+
+      - name: Run Playwright tests
+        run: |
+          echo "Running Playwright tests..."
+          cd src/tests-e2e
+          npm ci
+          npx playwright install --with-deps
+          npx playwright test
+
       - name: Show Docker logs if any step failed
         if: failure()
         run: |
