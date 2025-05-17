@@ -3,8 +3,14 @@ name: CI BlazorPong
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/ci.yml'
 
 jobs:
   test-application:
@@ -15,7 +21,6 @@ jobs:
 
       - name: Start services with Docker Compose
         run: docker-compose -f src/docker-compose.yml up -d
-        working-directory: /workspaces/cloudnativeblazorpong # Assuming actions/checkout checks out to a dir named after the repo
 
       - name: Wait for webapp and check health
         run: |
@@ -40,12 +45,10 @@ jobs:
           echo "Dumping Docker logs..."
           docker-compose -f src/docker-compose.yml logs
           exit 1
-        working-directory: /workspaces/cloudnativeblazorpong
 
       - name: Show Docker logs if any step failed
         if: failure()
         run: |
           echo "Dumping Docker logs due to failure..."
           docker-compose -f src/docker-compose.yml logs
-        working-directory: /workspaces/cloudnativeblazorpong
         continue-on-error: true # Ensure this step runs even if previous ones failed
