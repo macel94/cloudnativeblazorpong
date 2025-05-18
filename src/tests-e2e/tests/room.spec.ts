@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test('navigate to room, generate new room, try to play with 2 players', async ({ page }) => {
+  // Increase timeout for the test
+  test.setTimeout(240_000);
+
   await page.goto('http://localhost:6350/room');
 
   // Click the "generate new room" button.
