@@ -31,9 +31,12 @@ services:
       - "6351:8080"
       - "6402:9090"
     depends_on:
-      - redis
-      - azuresql
-      - collector
+      azuresql:
+        condition: service_healthy   # don’t start until SQL is healthy
+      redis:
+        condition: service_started   # port-open is enough for Redis
+      collector:
+        condition: service_started
 
   redis:
     image: "redis:latest"
@@ -53,6 +56,12 @@ services:
       - MSSQL_PACKAGE=/backup/Blazorpong.DB.AzureSql.dacpac
     ports:
       - "1433:1433"
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$$MSSQL_SA_PASSWORD" -Q "USE [Blazorpong.DB.AzureSql] select 1 from dbo.Room" -b -o /dev/null
+      interval: 15s          # poll every 15 s
+      timeout: 5s            # fail fast if sqlcmd hangs
+      start_period: 30s      # first 30 s are ignored
+      retries: 38            # 30 s + 38 × 15 s = 600 s (exactly 10 min)
 
   prometheus:
     image: prom/prometheus:latest
