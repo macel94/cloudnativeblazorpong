@@ -118,9 +118,7 @@ services:
     ports:
       - "1433:1433"
     healthcheck:
-      # sqlcmd moved to the 18.x tools path in recent images – adjust if your tag is older
-      test: ["CMD-SHELL",
-        "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $$MSSQL_SA_PASSWORD -Q 'SELECT 1' -b -o /dev/null"]
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$$MSSQL_SA_PASSWORD" -Q "USE [Blazorpong.DB.AzureSql] select 1 from dbo.Room" -b -o /dev/null
       interval: 15s          # poll every 15 s
       timeout: 5s            # fail fast if sqlcmd hangs
       start_period: 30s      # first 30 s are ignored
