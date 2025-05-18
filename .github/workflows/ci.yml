@@ -19,8 +19,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Wait 2 minutes so new images are available
+        run: sleep 120
+
       - name: Start services with Docker Compose
-        run: docker compose -f src/docker-compose.yml up -d
+        run: docker compose -f src/docker-compose.nobuild.yml up -d
 
       - name: Wait for webapp and check health
         run: |
@@ -43,12 +46,20 @@ jobs:
 
           echo "Timeout: Webapp did not become healthy at $WEBAPP_URL after $MAX_WAIT_SECONDS seconds. Last status: $STATUS_CODE"
           echo "Dumping Docker logs..."
-          docker compose -f src/docker-compose.yml logs
+          docker compose -f src/docker-compose.nobuild.yml logs
           exit 1
+
+      - name: Run Playwright tests
+        run: |
+          echo "Running Playwright tests..."
+          cd src/tests-e2e
+          npm ci
+          npx playwright install --with-deps
+          npx playwright test
 
       - name: Show Docker logs if any step failed
         if: failure()
         run: |
           echo "Dumping Docker logs due to failure..."
-          docker compose -f src/docker-compose.yml logs
+          docker compose -f src/docker-compose.nobuild.yml logs
         continue-on-error: true # Ensure this step runs even if previous ones failed
