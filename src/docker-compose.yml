@@ -79,9 +79,12 @@ services:
       - "6351:8080"
       - "6402:9090"
     depends_on:
-      - redis
-      - azuresql
-      - collector
+      azuresql:
+        condition: service_healthy   # don’t start until SQL is healthy
+      redis:
+        condition: service_started   # port-open is enough for Redis
+      collector:
+        condition: service_started
 
   redis:
     networks:
@@ -102,21 +105,26 @@ services:
   # volumes:
   #   garnetdata:
 
-  azuresql:
-    networks:
-      - blazorpong-network
-    image: mcr.microsoft.com/azure-sql-edge
-    container_name: azuresql
-    restart: unless-stopped
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
-    environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=yourStrong(!)Password
-      - MSSQL_PID=Developer
-      - MSSQL_PACKAGE=/backup/Blazorpong.DB.AzureSql.dacpac
-    ports:
-      - "1433:1433"
+azuresql:
+  image: mcr.microsoft.com/azure-sql-edge
+  container_name: azuresql
+  environment:
+    ACCEPT_EULA: Y
+    MSSQL_SA_PASSWORD: yourStrong(!)Password
+    MSSQL_PID: Developer
+    MSSQL_PACKAGE: /backup/Blazorpong.DB.AzureSql.dacpac
+  volumes:
+    - ${LOCAL_WORKSPACE_FOLDER}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
+  ports:
+    - "1433:1433"
+  healthcheck:
+    # sqlcmd moved to the 18.x tools path in recent images – adjust if your tag is older
+    test: ["CMD-SHELL",
+      "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $$MSSQL_SA_PASSWORD -Q 'SELECT 1' -b -o /dev/null"]
+    interval: 10s
+    timeout: 5s
+    retries: 30          # Azure SQL Edge + DACPAC can take a while
+    start_period: 20s
 
   prometheus:
     networks:
