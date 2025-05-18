@@ -121,10 +121,10 @@ services:
       # sqlcmd moved to the 18.x tools path in recent images – adjust if your tag is older
       test: ["CMD-SHELL",
         "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $$MSSQL_SA_PASSWORD -Q 'SELECT 1' -b -o /dev/null"]
-      interval: 10s
-      timeout: 5s
-      retries: 30          # Azure SQL Edge + DACPAC can take a while
-      start_period: 20s
+      interval: 15s          # poll every 15 s
+      timeout: 5s            # fail fast if sqlcmd hangs
+      start_period: 30s      # first 30 s are ignored
+      retries: 38            # 30 s + 38 × 15 s = 600 s (exactly 10 min)
 
   prometheus:
     networks:
