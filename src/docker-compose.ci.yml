@@ -54,7 +54,7 @@ services:
     image: "mcr.microsoft.com/azure-sql-edge:latest"
     container_name: azuresql
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
@@ -75,7 +75,7 @@ services:
     ports:
       - "9090"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
 
   collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -86,7 +86,7 @@ services:
       - "4318:4318"
       - "8889"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/otel-collector-config.yaml:/etc/collector.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/otel-collector-config.yaml:/etc/collector.yaml
     depends_on:
       - tempo
       - prometheus
@@ -97,7 +97,7 @@ services:
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/tempo.yaml:/etc/tempo.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/tempo.yaml:/etc/tempo.yaml
     # logging: *default-logging
     ports:
       - "3200"   # tempo
@@ -111,9 +111,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/dashboards:/etc/grafana/dashboards
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards:/etc/grafana/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -131,14 +131,14 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/loki.yaml:/etc/loki.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/loki.yaml:/etc/loki.yaml
 
   playwright:
     image: mcr.microsoft.com/playwright:latest
     container_name: playwright
     working_dir: /tests
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/tests-e2e:/tests
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/tests-e2e:/tests
     environment:
       - BASE_URL=http://webapp:8080
     depends_on:
