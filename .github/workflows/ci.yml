@@ -1,5 +1,8 @@
 name: CI BlazorPong
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
@@ -61,14 +64,25 @@ jobs:
           PLAYWRIGHT_CONTAINER="playwright" # The container running the Playwright tests
 
           while [ $ELAPSED_SECONDS -lt $MAX_WAIT_SECONDS ]; do
-            LOGS=$(docker logs $PLAYWRIGHT_CONTAINER 2>&1)
-            if echo "$LOGS" | grep -q "All tests passed"; then
-              echo "Playwright tests completed successfully."
-              echo "Dumping Docker logs of the whole compose setup..."
-              docker compose -f src/docker-compose.ci.yml logs
-              exit 0
+            # Check if container has exited
+            CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $PLAYWRIGHT_CONTAINER 2>/dev/null || echo "not_found")
+            
+            if [ "$CONTAINER_STATUS" = "exited" ]; then
+              EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $PLAYWRIGHT_CONTAINER)
+              if [ "$EXIT_CODE" = "0" ]; then
+                echo "Playwright tests completed successfully (exit code: $EXIT_CODE)."
+                echo "Dumping Docker logs of the whole compose setup..."
+                docker compose -f src/docker-compose.ci.yml logs
+                exit 0
+              else
+                echo "Playwright tests failed (exit code: $EXIT_CODE)."
+                echo "Dumping Docker logs of the whole compose setup..."
+                docker compose -f src/docker-compose.ci.yml logs
+                exit 1
+              fi
             fi
-            echo "Playwright tests not yet completed. Retrying in $INTERVAL_SECONDS seconds..."
+            
+            echo "Playwright tests still running (status: $CONTAINER_STATUS). Retrying in $INTERVAL_SECONDS seconds..."
             sleep $INTERVAL_SECONDS
             ELAPSED_SECONDS=$((ELAPSED_SECONDS + INTERVAL_SECONDS))
           done
@@ -77,3 +91,41 @@ jobs:
           echo "Dumping Docker logs of the whole compose setup..."
           docker compose -f src/docker-compose.ci.yml logs
           exit 1
+
+      - name: Copy test results from Playwright container
+        if: always()
+        run: |
+          # Crea directory per i risultati
+          mkdir -p playwright-results
+          
+          # Copia i risultati HTML report dal container
+          docker cp playwright:/tests/playwright-report ./playwright-results/ || echo "No HTML report found"
+          
+          # Copia i test results dal container
+          docker cp playwright:/tests/test-results ./playwright-results/ || echo "No test results found"
+          
+          # Copia eventuali screenshot/video dal container
+          docker cp playwright:/tests/screenshots ./playwright-results/ || echo "No screenshots found"
+
+      - name: Upload Playwright Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-${{ github.run_number }}
+          path: |
+            playwright-results/
+            src/tests-e2e/playwright-report/
+            src/tests-e2e/test-results/
+          retention-days: 30
+
+      - name: Upload Playwright HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report-${{ github.run_number }}
+          path: playwright-results/playwright-report/
+          retention-days: 30
+
+      - name: Cleanup containers
+        if: always()
+        run: docker compose -f src/docker-compose.ci.yml down
