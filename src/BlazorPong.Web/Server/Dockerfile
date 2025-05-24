@@ -22,6 +22,15 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./BlazorPong.Web.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+# Install curl as root, then revert to non-root
+USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Switch back to the built-in non-root user for security
+USER app
+
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "BlazorPong.Web.Server.dll"]

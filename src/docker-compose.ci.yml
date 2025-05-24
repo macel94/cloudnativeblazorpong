@@ -17,7 +17,7 @@ services:
       - signalr
       - collector
     healthcheck:
-      test: ["CMD", "wget", "-f", "http://localhost:8080/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 30s          # poll every 30 s
       timeout: 10s           # fail fast if curl hangs
       start_period: 10s
