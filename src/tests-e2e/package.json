@@ -8,7 +8,7 @@
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "report": "playwright show-report",
-    "install:browsers": "playwright install"
+    "install:browsers": "playwright install --with-deps"
   },
   "keywords": [],
   "author": "",
