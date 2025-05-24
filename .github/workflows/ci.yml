@@ -12,6 +12,9 @@ on:
       - 'src/**'
       - '.github/workflows/ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test-application:
     runs-on: ubuntu-latest
