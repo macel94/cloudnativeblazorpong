@@ -28,7 +28,7 @@
                               Items="@(Enum.GetValues<HttpTransportType>().Where(x => x != HttpTransportType.None))"
                               @bind-SelectedOption="@connectionTypeChoice" />
 
-                <FluentButton @onclick="ConnectToHub"> Connect</FluentButton>
+                <FluentButton @onclick="ConnectToHub">Connect</FluentButton>
             }
             else
             {
