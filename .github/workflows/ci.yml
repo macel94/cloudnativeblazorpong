@@ -22,8 +22,8 @@ jobs:
       - name: Wait 2 minutes so new images are available
         run: sleep 120
 
-      - name: Start services with Docker Compose
-        run: docker compose -f src/docker-compose.nobuild.yml up -d
+      - name: Start services with Docker Compose, test
+        run: docker compose -f src/docker-compose.ci.yml up -d
 
       - name: Wait for webapp and check health
         run: |
@@ -49,17 +49,28 @@ jobs:
           docker compose -f src/docker-compose.nobuild.yml logs
           exit 1
 
-      - name: Run Playwright tests
+      - name: Wait for tests to complete by reading the logs of the playwright container
         run: |
-          echo "Running Playwright tests..."
-          cd src/tests-e2e
-          npm ci
-          npx playwright install --with-deps
-          npx playwright test
+          echo "Waiting for Playwright tests to complete..."
+          MAX_WAIT_SECONDS=180 # Wait for a maximum of 3 minutes
+          INTERVAL_SECONDS=10
+          ELAPSED_SECONDS=0
+          PLAYWRIGHT_CONTAINER="playwright" # The container running the Playwright tests
 
-      - name: Show Docker logs if any step failed
-        if: failure()
-        run: |
-          echo "Dumping Docker logs due to failure..."
-          docker compose -f src/docker-compose.nobuild.yml logs
-        continue-on-error: true # Ensure this step runs even if previous ones failed
+          while [ $ELAPSED_SECONDS -lt $MAX_WAIT_SECONDS ]; do
+            LOGS=$(docker logs $PLAYWRIGHT_CONTAINER 2>&1)
+            if echo "$LOGS" | grep -q "All tests passed"; then
+              echo "Playwright tests completed successfully."
+              echo "Dumping Docker logs of the whole compose setup..."
+              docker compose -f src/docker-compose.ci.yml logs
+              exit 0
+            fi
+            echo "Playwright tests not yet completed. Retrying in $INTERVAL_SECONDS seconds..."
+            sleep $INTERVAL_SECONDS
+            ELAPSED_SECONDS=$((ELAPSED_SECONDS + INTERVAL_SECONDS))
+          done
+
+          echo "Timeout: Playwright tests did not complete after $MAX_WAIT_SECONDS seconds."
+          echo "Dumping Docker logs of the whole compose setup..."
+          docker compose -f src/docker-compose.ci.yml logs
+          exit 1

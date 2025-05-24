@@ -4,7 +4,11 @@ test('navigate to room, generate new room, try to play with 2 players', async ({
   // Increase timeout for the test
   test.setTimeout(240_000);
 
-  await page.goto('http://localhost:6350/room');
+  // Should go to $BASE_URL/room
+  await page.goto('/room');
+
+  // Click the "generate new room" button.
+  await page.getByRole('button', { name: 'Connect' }).click();
 
   // Click the "generate new room" button.
   await page.getByRole('button', { name: 'Create new Room' }).click();
