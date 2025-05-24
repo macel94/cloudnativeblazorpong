@@ -134,7 +134,7 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/loki.yaml:/etc/loki.yaml
 
   playwright:
-    image: mcr.microsoft.com/playwright:latest
+    image: mcr.microsoft.com/playwright:v1.52.0-noble
     container_name: playwright
     working_dir: /tests
     volumes:
