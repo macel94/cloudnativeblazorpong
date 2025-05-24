@@ -22,6 +22,9 @@ jobs:
       - name: Wait 2 minutes so new images are available
         run: sleep 120
 
+      - name: Set LOCAL_WORKSPACE_FOLDER env variable
+        run: echo "LOCAL_WORKSPACE_FOLDER=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+
       - name: Start services with Docker Compose, test
         run: docker compose -f src/docker-compose.ci.yml up -d
 
