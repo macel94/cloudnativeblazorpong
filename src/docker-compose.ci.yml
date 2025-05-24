@@ -1,11 +1,11 @@
 services:
   webapp:
-    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web
+    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web:latest
     container_name: webapp
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - GameHubEndpoint=http://localhost:6351/gamehub
+      - GameHubEndpoint=http://host.docker.internal:6351/gamehub
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_RESOURCE_ATTRIBUTES=service.name=webapp
@@ -24,7 +24,7 @@ services:
       retries: 3             
 
   signalr:
-    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr
+    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr:latest
     container_name: signalr
     environment:
       - ASPNETCORE_ENVIRONMENT=Development

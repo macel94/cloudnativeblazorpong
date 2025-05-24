@@ -118,14 +118,6 @@ jobs:
             src/tests-e2e/test-results/
           retention-days: 30
 
-      - name: Upload Playwright HTML Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-html-report-${{ github.run_number }}
-          path: playwright-results/playwright-report/
-          retention-days: 30
-
       - name: Cleanup containers
         if: always()
         run: docker compose -f src/docker-compose.ci.yml down

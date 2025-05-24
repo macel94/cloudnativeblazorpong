@@ -186,7 +186,11 @@
             if (RoomId.HasValue)
             {
                 tempRoomId = RoomId.Value.ToString();
+                Logger.LogInformation($"RoomId from parameter: {tempRoomId}");
+                // Waiting a second to ensure the JS module is loaded
+                await Task.Delay(1000);
                 await ConnectToHub();
+                await Task.Delay(1000);
                 await JoinRoomAsync();
                 await InvokeAsync(StateHasChanged);
             }
