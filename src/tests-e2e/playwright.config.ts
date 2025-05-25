@@ -32,10 +32,10 @@ export default defineConfig({
     baseURL: process.env.BASE_URL || 'http://host.docker.internal:6350',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     
     /* Take screenshot on failure */
-    screenshot: 'on',
+    screenshot: 'only-on-failure',
     
     /* Record video on failure */
     video: 'retain-on-failure',
