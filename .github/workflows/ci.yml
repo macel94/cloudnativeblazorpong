@@ -26,7 +26,7 @@ jobs:
         run: echo "LOCAL_WORKSPACE_FOLDER=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
 
       - name: Wait for upstream pipelines to finish
-        uses: macel94/await-workflows@v1.0.0
+        uses: macel94/await-workflows@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           workflows: |
