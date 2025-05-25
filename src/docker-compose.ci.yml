@@ -141,6 +141,7 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER-.}/src/tests-e2e:/tests
     environment:
       - BASE_URL=http://webapp:8080
+      - CI=true
     depends_on:
       webapp:
         condition: service_healthy
