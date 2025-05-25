@@ -28,96 +28,22 @@ jobs:
       - name: Set LOCAL_WORKSPACE_FOLDER env variable
         run: echo "LOCAL_WORKSPACE_FOLDER=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
 
-      - name: Start services with Docker Compose, test
-        run: docker compose -f src/docker-compose.ci.yml up -d
-
-      - name: Wait for webapp and check health
+      - name: Start all services except Playwright
         run: |
-          echo "Waiting for services to start..."
-          MAX_WAIT_SECONDS=180 # Wait for a maximum of 3 minutes
-          INTERVAL_SECONDS=10
-          ELAPSED_SECONDS=0
-          WEBAPP_URL="http://localhost:6350" # Port 6350 is mapped from webapp:8080
+          docker compose -f src/docker-compose.ci.yml up -d \
+            webapp signalr redis azuresql prometheus collector tempo loki grafana
 
-          while [ $ELAPSED_SECONDS -lt $MAX_WAIT_SECONDS ]; do
-            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" $WEBAPP_URL || echo "000")
-            if [ "$STATUS_CODE" -eq 200 ]; then
-              echo "Webapp is up and running! Received status $STATUS_CODE from $WEBAPP_URL."
-              exit 0
-            fi
-            echo "Webapp not ready (status: $STATUS_CODE from $WEBAPP_URL). Retrying in $INTERVAL_SECONDS seconds..."
-            sleep $INTERVAL_SECONDS
-            ELAPSED_SECONDS=$((ELAPSED_SECONDS + INTERVAL_SECONDS))
-          done
+      - name: Run Playwright tests
+        # ← RUN PLAYWRIGHT IN THE FOREGROUND: logs stream to Actions console
+        run: docker compose -f src/docker-compose.ci.yml run --rm playwright
 
-          echo "Timeout: Webapp did not become healthy at $WEBAPP_URL after $MAX_WAIT_SECONDS seconds. Last status: $STATUS_CODE"
-          echo "Dumping Docker logs..."
-          docker compose -f src/docker-compose.nobuild.yml logs
-          exit 1
-
-      - name: Wait for tests to complete by reading the logs of the playwright container
-        run: |
-          echo "Waiting for Playwright tests to complete..."
-          MAX_WAIT_SECONDS=180 # Wait for a maximum of 3 minutes
-          INTERVAL_SECONDS=10
-          ELAPSED_SECONDS=0
-          PLAYWRIGHT_CONTAINER="playwright" # The container running the Playwright tests
-
-          while [ $ELAPSED_SECONDS -lt $MAX_WAIT_SECONDS ]; do
-            # Check if container has exited
-            CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $PLAYWRIGHT_CONTAINER 2>/dev/null || echo "not_found")
-            
-            if [ "$CONTAINER_STATUS" = "exited" ]; then
-              EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $PLAYWRIGHT_CONTAINER)
-              if [ "$EXIT_CODE" = "0" ]; then
-                echo "Playwright tests completed successfully (exit code: $EXIT_CODE)."
-                echo "Dumping Docker logs of the whole compose setup..."
-                docker compose -f src/docker-compose.ci.yml logs
-                exit 0
-              else
-                echo "Playwright tests failed (exit code: $EXIT_CODE)."
-                echo "Dumping Docker logs of the whole compose setup..."
-                docker compose -f src/docker-compose.ci.yml logs
-                exit 1
-              fi
-            fi
-            
-            echo "Playwright tests still running (status: $CONTAINER_STATUS). Retrying in $INTERVAL_SECONDS seconds..."
-            sleep $INTERVAL_SECONDS
-            ELAPSED_SECONDS=$((ELAPSED_SECONDS + INTERVAL_SECONDS))
-          done
-
-          echo "Timeout: Playwright tests did not complete after $MAX_WAIT_SECONDS seconds."
-          echo "Dumping Docker logs of the whole compose setup..."
-          docker compose -f src/docker-compose.ci.yml logs
-          exit 1
-
-      - name: Copy test results from Playwright container
-        if: always()
-        run: |
-          # Crea directory per i risultati
-          mkdir -p playwright-results
-          
-          # Copia i risultati HTML report dal container
-          docker cp playwright:/tests/playwright-report ./playwright-results/ || echo "No HTML report found"
-          
-          # Copia i test results dal container
-          docker cp playwright:/tests/test-results ./playwright-results/ || echo "No test results found"
-          
-          # Copia eventuali screenshot/video dal container
-          docker cp playwright:/tests/screenshots ./playwright-results/ || echo "No screenshots found"
-
-      - name: Upload Playwright Test Results
+      - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results-${{ github.run_number }}
           path: |
-            playwright-results/
             src/tests-e2e/playwright-report/
             src/tests-e2e/test-results/
+            src/tests-e2e/screenshots/
           retention-days: 30
-
-      - name: Cleanup containers
-        if: always()
-        run: docker compose -f src/docker-compose.ci.yml down
