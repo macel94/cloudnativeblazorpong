@@ -32,6 +32,7 @@ jobs:
           workflows: |
             blazorpong-web.yml
             blazorpong-signalr.yml
+          poll-interval: 5000
 
       - name: Start all services except Playwright
         run: |
