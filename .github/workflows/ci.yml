@@ -22,11 +22,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Wait 2 minutes so new images are available
-        run: sleep 120
-
       - name: Set LOCAL_WORKSPACE_FOLDER env variable
         run: echo "LOCAL_WORKSPACE_FOLDER=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+
+      - name: Wait for upstream pipelines to finish
+        uses: macel94/await-workflows@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workflows: |
+            blazorpong-web.yml
+            blazorpong-signalr.yml
 
       - name: Start all services except Playwright
         run: |
