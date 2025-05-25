@@ -144,4 +144,4 @@ services:
     depends_on:
       webapp:
         condition: service_healthy
-    command: ["sh", "-c", "npm install && npx playwright install --with-deps && npx playwright test"]
+    command: ["sh", "-c", "npm install && npx playwright install --with-deps && npx playwright install chrome && npx playwright test"]
