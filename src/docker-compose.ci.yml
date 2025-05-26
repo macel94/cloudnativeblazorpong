@@ -5,7 +5,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - GameHubEndpoint=http://host.docker.internal:6351/gamehub
+      - GameHubEndpoint=http://signalr:8080/gamehub
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_RESOURCE_ATTRIBUTES=service.name=webapp
