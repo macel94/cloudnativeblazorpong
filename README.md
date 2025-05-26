@@ -2,6 +2,8 @@
 
 Cloud Native Blazor Pong wants to be a revival of the classic [BlazorPong](https://github.com/macel94/BlazorPong) with enhanced features including authentication(or just the concept of identities, to start), multi-room support, automatic infrastructure scalability, and a highscores page with statistical data on player performance.
 
+[![CI BlazorPong with Playwright tests](https://github.com/macel94/cloudnativeblazorpong/actions/workflows/ci.yml/badge.svg)](https://github.com/macel94/cloudnativeblazorpong/actions/workflows/ci.yml)
+
 [![Build and Push Blazorpong SignalR Docker Image](https://github.com/macel94/cloudnativeblazorpong/actions/workflows/blazorpong-signalr.yml/badge.svg)](https://github.com/macel94/cloudnativeblazorpong/actions/workflows/blazorpong-signalr.yml)
 
 [![Build and Push Blazorpong Web Docker Image](https://github.com/macel94/cloudnativeblazorpong/actions/workflows/blazorpong-web.yml/badge.svg)](https://github.com/macel94/cloudnativeblazorpong/actions/workflows/blazorpong-web.yml)
