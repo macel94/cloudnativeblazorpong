@@ -40,7 +40,7 @@ jobs:
 
       - name: Start all services except Playwright
         run: |
-          docker compose -f src/docker-compose.ci.yml up -d \
+          docker compose -f src/docker-compose.ci.yml up --pull always -d \
             webapp signalr redis azuresql prometheus collector tempo loki grafana
 
       - name: Run Playwright tests
