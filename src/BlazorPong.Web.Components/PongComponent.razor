@@ -220,6 +220,12 @@
         {
             await SetOnbeforeunload();
             var endpoint = GameHubEndpoint;
+            if (string.IsNullOrEmpty(endpoint))
+            {
+                Logger.LogError("GameHubEndpoint is null or empty. Cannot connect to the hub.");
+                return;
+            }
+
             Connection = new HubConnectionBuilder()
             .WithUrl(endpoint, connectionTypeChoice)
             .WithAutomaticReconnect()

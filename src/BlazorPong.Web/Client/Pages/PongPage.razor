@@ -3,10 +3,15 @@
 @using Microsoft.Extensions.Configuration
 @inject HttpClient ServerHttpClient
 @inject NavigationManager NavigationManager
+@inject ILogger<PongComponent> Logger
+
 @page "/room/{roomId:guid}/pong"
 @page "/room"
 
-<PongComponent GameHubEndpoint="@(GameHubEndpoint)" RoomId="@(RoomId)" />
+@if (!string.IsNullOrWhiteSpace(GameHubEndpoint))
+{
+    <PongComponent GameHubEndpoint="@(GameHubEndpoint)" RoomId="@(RoomId)" />
+}
 @code {
     [Parameter]
     public Guid? RoomId { get; set; }
@@ -15,7 +20,25 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        var result = await ServerHttpClient.GetFromJsonAsync<BaseClientConfig>("GetBaseClientConfig") ?? throw new Exception("Could not get GameHubEndpoint");
-        GameHubEndpoint = result.GameHubEndpoint;
+        try
+        {
+
+            Logger.LogInformation("Attempting to fetch GameHubEndpoint...");
+            var result = await ServerHttpClient.GetFromJsonAsync<BaseClientConfig>("GetBaseClientConfig") ?? throw new
+            Exception("Could not get GameHubEndpoint");
+            if (result == null)
+            {
+                Logger.LogError("GetBaseClientConfig returned null");
+                throw new Exception("Could not get GameHubEndpoint - API returned null");
+            }
+
+            GameHubEndpoint = result.GameHubEndpoint;
+            Logger.LogInformation($"GameHubEndpoint set to: {GameHubEndpoint}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to fetch GameHubEndpoint");
+            throw;
+        }
     }
 }
