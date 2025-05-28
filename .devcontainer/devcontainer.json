@@ -22,7 +22,8 @@
 				"ms-mssql.mssql",
 				"ms-playwright.playwright",
 				"ms-azuretools.vscode-containers",
-				"GitHub.copilot"
+				"GitHub.copilot",
+				"ms-vscode.powershell"
 			]
 		}
 	},
