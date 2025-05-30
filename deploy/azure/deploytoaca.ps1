@@ -150,7 +150,7 @@ function New-ContainerAppsEnvironment {
             --resource-group $ResourceGroupName `
             --location $Location `
             --logs-workspace-id $WorkspaceId `
-            --only-show-errors
+            --only-show-errors | Out-Null
         
         Write-Host "✓ Created Container Apps Environment: $envName"
         return $envName
@@ -164,14 +164,18 @@ function Deploy-DockerCompose {
     
     if ($PSCmdlet.ShouldProcess($ComposePath, "Deploy Docker Compose")) {
         Write-Host "Using native Azure Container Apps compose support..."
-        
+        Write-Host "Compose file: $ComposePath"
+        Write-Host "Resource Group: $ResourceGroupName"
+        Write-Host "Environment: $EnvironmentName"
+        Write-Host "LOCAL_WORKSPACE_FOLDER: $LOCAL_WORKSPACE_FOLDER"
         try {
             az containerapp compose create `
-                --compose-file-path $ComposePath `
+                -f $ComposePath `
                 --resource-group $ResourceGroupName `
                 --environment $EnvironmentName `
-                --only-show-errors
-            
+                --verbose
+                # --only-show-errors
+                
             Write-Host "✓ Docker Compose deployed successfully"
             
             # Show deployed apps
@@ -214,10 +218,6 @@ function Show-Summary {
         }
     }
     
-    Write-Host "`n🔧 Services:"
-    Write-Host "  Redis: Running as container app (internal)"
-    Write-Host "  Log Analytics: $($script:ResourceNames.LogWorkspace) ($($script:DevConfig.LogRetentionDays) retention)"
-    
     Write-Host "`n🗑️  Cleanup:"
     Write-Host "  az group delete --name $ResourceGroupName --yes --no-wait"
 }
@@ -238,7 +238,6 @@ function Invoke-Main {
     try {
         Write-Host "🚀 Azure Container Apps All-In-One Deployment"
         Write-Host "App: $AppName | Location: $Location"
-        Write-Host "Strategy: Everything containerized (including Redis)"
         
         if ($DryRun) {
             Write-Host "🔍 DRY RUN MODE - No resources will be created"
