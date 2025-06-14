@@ -106,7 +106,7 @@ services:
   #   garnetdata:
 
   azuresql:
-    image: "mcr.microsoft.com/azure-sql-edge:latest"
+    image: "mcr.microsoft.com/mssql/server:2025-latest"
     container_name: azuresql
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER-.}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
