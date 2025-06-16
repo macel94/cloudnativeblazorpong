@@ -29,7 +29,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Redis=redis:6379
-      - ConnectionStrings__AzureSql=Server=azuresql;Database=Blazorpong.DB.AzureSql;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - ConnectionStrings__AzureSql=Server=azuresql;Database=BlazorpongDB;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True;Encrypt=False;
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_RESOURCE_ATTRIBUTES=service.name=signalr
@@ -53,57 +53,30 @@ services:
   azuresql:
     image: "mcr.microsoft.com/mssql/server:2025-latest"
     container_name: azuresql
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Blazorpong.DB.AzureSql/bin/Debug:/backup:ro
+    hostname: azuresql
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
-      - MSSQL_PID=Developer
     ports:
       - "1433:1433"
-    # healthcheck:
-    #   test: /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$$MSSQL_SA_PASSWORD" -Q "USE [Blazorpong.DB.AzureSql] select 1 from dbo.Room" -b -o /dev/null
-    #   interval: 15s          # poll every 15 s
-    #   timeout: 5s            # fail fast if sqlcmd hangs
-    #   start_period: 30s      # first 30 s are ignored
-    #   retries: 38            # 30 s + 38 × 15 s = 600 s (exactly 10 min)
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$$MSSQL_SA_PASSWORD" -Q "select 1"
+      interval: 3s
+      timeout: 1s
+      retries: 10
+
   azuresql-init:
-    image: mcr.microsoft.com/mssql/server:2025-latest
+    image: mcr.microsoft.com/mssql-tools # ← official sqlcmd/bcp image :contentReference[oaicite:0]{index=0}
+    user: root # run as root so apt-get can write
     depends_on:
       - azuresql
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        # ── 1) Install sqlpackage CLI ─────────────────────────────────────
-        apt-get update \
-          && apt-get install -y curl apt-transport-https unzip libunwind8 \
-          && curl -SL -o /tmp/sqlpackage.zip https://aka.ms/sqlpackage-linux \
-          && unzip -q /tmp/sqlpackage.zip -d /opt/sqlpackage \
-          && chmod +x /opt/sqlpackage/sqlpackage \
-          && rm /tmp/sqlpackage.zip
-
-        # ── 2) Wait for SQL Server ────────────────────────────────────────
-        until /opt/mssql-tools18/bin/sqlcmd -S azuresql -U sa -P "$$SA_PASSWORD" -Q "SELECT 1" &>/dev/null; do
-          sleep 1
-        done
-
-        # ── 3) Import the DACPAC ─────────────────────────────────────────
-        echo "📦 Importing Blazorpong.DB.AzureSql.dacpac…"
-        /opt/sqlpackage/sqlpackage \
-          /Action:Import \
-          /SourceFile:/tmp/Blazorpong.DB.AzureSql.dacpac \
-          /TargetServerName:azuresql \
-          /TargetDatabaseName:BlazorpongDB \
-          /TargetUser:sa \
-          /TargetPassword:"$SA_PASSWORD"
-
+    volumes:
+      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac:/tmp/yourdb.dacpac:ro
+      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/scripts/azuresql-init.sh:/usr/local/bin/azuresql-init.sh:ro
     environment:
       - SA_PASSWORD=yourStrong(!)Password
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac:/tmp/Blazorpong.DB.AzureSql.dacpac:ro
+    entrypoint: ["/usr/local/bin/azuresql-init.sh"]
     restart: "no"
-
 
   prometheus:
     image: prom/prometheus:latest
