@@ -3,6 +3,7 @@ sleep 10
 
 # Globally install sqlpackage
 dotnet tool install -g microsoft.sqlpackage
+dotnet tool install --global dotnet-outdated-tool
 
 # Add .NET Core SDK tools to the PATH
 echo '# Add .NET Core SDK tools

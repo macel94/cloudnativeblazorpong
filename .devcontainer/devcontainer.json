@@ -13,7 +13,8 @@
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/devcontainers/features/azure-cli:1": {},
 		// NPM
-		"ghcr.io/devcontainers/features/node:1": {}
+		"ghcr.io/devcontainers/features/node:1": {},
+		"ghcr.io/azure/azure-dev/azd:latest": {}
 	},
 	"customizations": {
 		"vscode": {
@@ -32,7 +33,22 @@
 		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
 	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [6350, 6401, 6351, 6402, 6379, 1433, 8080, 9090, 4317, 4318, 3000, 3100, 3200, 8889],
+	"forwardPorts": [
+		6350,
+		6401,
+		6351,
+		6402,
+		6379,
+		1433,
+		8080,
+		9090,
+		4317,
+		4318,
+		3000,
+		3100,
+		3200,
+		8889
+	],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
 	// Configure tool-specific properties.
