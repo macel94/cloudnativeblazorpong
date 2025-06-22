@@ -37,7 +37,7 @@ services:
       - "6351:8080"
       - "6402:9090"
     depends_on:
-      azuresql-init:
+      initcontainer:
         condition: service_completed_successfully
       redis:
         condition: service_started   # port-open is enough for Redis
@@ -65,17 +65,17 @@ services:
       timeout: 1s
       retries: 10
 
-  azuresql-init:
+  initcontainer:
     image: mcr.microsoft.com/mssql-tools # ← official sqlcmd/bcp image :contentReference[oaicite:0]{index=0}
     user: root # run as root so apt-get can write
     depends_on:
       - azuresql
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER:-.}/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac:/tmp/yourdb.dacpac:ro
-      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/scripts/azuresql-init.sh:/usr/local/bin/azuresql-init.sh:ro
+      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/scripts/initcontainer.sh:/usr/local/bin/initcontainer.sh:ro
     environment:
       - SA_PASSWORD=yourStrong(!)Password
-    entrypoint: ["/usr/local/bin/azuresql-init.sh"]
+    entrypoint: ["/usr/local/bin/initcontainer.sh"]
     restart: "no"
 
   prometheus:

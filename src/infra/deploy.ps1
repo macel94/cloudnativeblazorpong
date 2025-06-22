@@ -30,7 +30,7 @@ param(
   [Parameter(Mandatory)]
   [SecureString]$SqlAdminPassword,
 
-  [string]$RepoPath = ".\.."
+  [string]$RepoPath = "./.."
 )
 
 #–– Verify Azure CLI ––
@@ -58,9 +58,23 @@ $sqlPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto($ptr)
 
 #–– 1) Deploy infra.bicep ––
 Write-Host "`n🚀 Deploying infra.bicep…" -ForegroundColor Cyan
+if($PSScriptRoot) {
+  $infraPath = Join-Path $PSScriptRoot "infra.bicep"
+}
+else{
+  $infraPath = "./infra.bicep"
+}
+
+Write-Host "Using infra.bicep from: $infraPath"
+
+if (-not (Test-Path $infraPath)) {
+  Write-Error "Infra Bicep file not found at '$infraPath'."
+  exit 1
+}
+
 $infraOutputs = az deployment group create `
   --resource-group $ResourceGroupName `
-  --template-file ./infra.bicep `
+  --template-file $infraPath `
   --parameters location=$Location baseName=$BaseName `
   --query properties.outputs `
   --output json | ConvertFrom-Json
@@ -72,14 +86,15 @@ $appins = $infraOutputs.applicationInsightsConnectionString.value
 Write-Host "✅ Infra deployed."
 Write-Host " • containerAppsEnvironmentId = $envId"
 Write-Host " • storageMountName           = $mount"
-Write-Host " • appInsightsConnStr         = $($appins.Substring(0,40))…"
+if ($appins) {
+  Write-Host " • appInsightsConnStr         = $($appins.Substring(0, [Math]::Min(40, $appins.Length)))…"
+} else {
+  Write-Error "Application Insights connection string not found in outputs."
+  exit 1
+}
 
 #–– 2) Upload entire repo into the File share ––
 $saName    = "${BaseName}sa"
-$shareName = "configurations"
-$fullPath  = Resolve-Path $RepoPath
-
-Write-Host "`n📂 Uploading '$fullPath' → file share '$shareName' in storage account '$saName'…" -ForegroundColor Cyan
 
 # Get storage account key
 $key = az storage account keys list `
@@ -87,21 +102,11 @@ $key = az storage account keys list `
   --account-name $saName `
   --query "[0].value" -o tsv
 
-# Batch-upload all files (preserves folder structure)
-az storage file upload-batch `
-  --account-name $saName `
-  --account-key  $key `
-  --destination   $shareName `
-  --source        $fullPath `
-  --overwrite     true
-
-Write-Host "✅ Files uploaded to Azure Files."
-
 #–– 3) Deploy services.bicep ––
 Write-Host "`n🚀 Deploying services.bicep…" -ForegroundColor Cyan
 az deployment group create `
   --resource-group $ResourceGroupName `
-  --template-file ./services.bicep `
+  --template-file "$PSScriptRoot/services.bicep" `
   --parameters `
       location=$Location `
       containerAppsEnvironmentId=$envId `
