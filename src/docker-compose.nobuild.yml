@@ -1,6 +1,6 @@
 services:
   webapp:
-    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web
+    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web:latest
     container_name: webapp
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -16,9 +16,15 @@ services:
     depends_on:
       - signalr
       - collector
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s          # poll every 30 s
+      timeout: 10s           # fail fast if curl hangs
+      start_period: 10s
+      retries: 3             
 
   signalr:
-    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr
+    image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr:latest
     container_name: signalr
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -34,7 +40,7 @@ services:
       initcontainer:
         condition: service_completed_successfully
       redis:
-        condition: service_started # port-open is enough for Redis
+        condition: service_started
       collector:
         condition: service_started
 
@@ -78,7 +84,7 @@ services:
     ports:
       - "9090"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
 
   collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -89,7 +95,7 @@ services:
       - "4318:4318"
       - "8889"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/otel-collector-config.yaml:/etc/collector.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/otel-collector-config.yaml:/etc/collector.yaml
     depends_on:
       - tempo
       - prometheus
@@ -100,11 +106,11 @@ services:
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/tempo.yaml:/etc/tempo.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/tempo.yaml:/etc/tempo.yaml
     ports:
-      - "3200" # tempo
-      - "4317" # otlp grpc
-      - "4318" # otlp http
+      - "3200"   # tempo
+      - "4317"  # otlp grpc
+      - "4318"  # otlp http
 
   grafana:
     image: grafana/grafana:latest
@@ -112,9 +118,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/dashboards:/etc/grafana/dashboards
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards:/etc/grafana/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -132,4 +138,4 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER}/src/Observability/loki.yaml:/etc/loki.yaml
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/loki.yaml:/etc/loki.yaml
