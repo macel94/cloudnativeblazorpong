@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f src/docker-compose.nobuild.yml --volumes emptyDir -o src/infra/aks
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    io.kompose.service: initcontainer
+  name: initcontainer
+spec:
+  containers:
+    - args:
+        - bash
+        - -euxc
+        - |
+          apt-get update
+          apt-get install -y git
+          rm -rf /var/lib/apt/lists/*
+
+          if [ ! -d /shared/cloudnativeblazorpong/.git ]; then
+            echo 'Cloning CloudnativeBlazorpong…'
+            git clone --depth 1 https://github.com/macel94/cloudnativeblazorpong.git /shared/cloudnativeblazorpong
+          else
+            echo 'Updating existing clone…'
+            cd /shared/cloudnativeblazorpong
+            git pull --ff-only
+          fi
+          echo 'Cloned contents of cloudnativeblazorpong repository:'
+          ls /shared/cloudnativeblazorpong
+
+          echo 'Copying Blazorpong.DB.AzureSql project files…'
+          cp /shared/cloudnativeblazorpong/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac \
+            /tmp/yourdb.dacpac
+          echo 'DACPAC copied to /tmp/yourdb.dacpac'
+
+          chmod +x /shared/cloudnativeblazorpong/src/scripts/initcontainer.sh
+          /shared/cloudnativeblazorpong/src/scripts/initcontainer.sh
+      env:
+        - name: SA_PASSWORD
+          value: yourStrong(!)Password
+      image: mcr.microsoft.com/mssql-tools
+      name: initcontainer
+      volumeMounts:
+        - mountPath: /shared
+          name: repo
+  restartPolicy: Never
+  volumes:
+    - name: repo

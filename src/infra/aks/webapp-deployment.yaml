@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f src/docker-compose.nobuild.yml --volumes emptyDir -o src/infra/aks
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    io.kompose.service: webapp
+  name: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: webapp
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f src/docker-compose.nobuild.yml --volumes emptyDir -o src/infra/aks
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        io.kompose.service: webapp
+    spec:
+      containers:
+        - env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+              value: "true"
+            - name: GameHubEndpoint
+              value: http://localhost:6351/gamehub
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://collector:4317
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: grpc
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=webapp
+          image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web:latest
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: webapp
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 9090
+              protocol: TCP
+      restartPolicy: Always

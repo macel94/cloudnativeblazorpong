@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f src/docker-compose.nobuild.yml --volumes emptyDir -o src/infra/aks
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    io.kompose.service: prometheus
+  name: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: prometheus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f src/docker-compose.nobuild.yml --volumes emptyDir -o src/infra/aks
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        io.kompose.service: prometheus
+    spec:
+      containers:
+        - args:
+            - --config.file=/shared/cloudnativeblazorpong/src/Observability/prometheus.yaml
+          image: prom/prometheus:latest
+          name: prometheus
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /shared
+              name: repo
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: repo

@@ -11,3 +11,9 @@ export PATH="$PATH:/root/.dotnet/tools"' >> ~/.bashrc
 
 # # Source the updated bash profile to update the PATH for the current session
 # source ~/.bash_profile
+
+curl -L https://github.com/kubernetes/kompose/releases/download/v1.36.0/kompose-linux-amd64 -o kompose
+chmod +x kompose
+sudo mv ./kompose /usr/local/bin/kompose
+
+az aks install-cli
