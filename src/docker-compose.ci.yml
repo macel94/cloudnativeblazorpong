@@ -118,9 +118,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards:/etc/grafana/dashboards
+      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/grafana/provisioning/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin

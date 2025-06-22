@@ -13,8 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{C8122674-880E-43F2-9DC3-B17BA34E02B6}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Web.Client", "BlazorPong.Web\Client\BlazorPong.Web.Client.csproj", "{46B9AA7A-6C6C-4802-8269-EB9A29ABF5E3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorPong.Web.Components", "BlazorPong.Web.Components\BlazorPong.Web.Components.csproj", "{636FADEB-CD71-4997-BCE2-815075D1ACBD}"

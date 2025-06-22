@@ -1,4 +1,45 @@
+volumes:
+  repo:
+
 services:
+  initcontainer:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: initcontainer
+    user: root # run as root so apt-get can write
+    depends_on:
+      - azuresql
+    volumes:
+      - repo:/shared
+    environment:
+      - SA_PASSWORD=yourStrong(!)Password
+    command:
+      - bash
+      - -euxc
+      - |
+        apt-get update
+        apt-get install -y git
+        rm -rf /var/lib/apt/lists/*
+
+        if [ ! -d /shared/cloudnativeblazorpong/.git ]; then
+          echo 'Cloning CloudnativeBlazorpong…'
+          git clone --depth 1 https://github.com/macel94/cloudnativeblazorpong.git /shared/cloudnativeblazorpong
+        else
+          echo 'Updating existing clone…'
+          cd /shared/cloudnativeblazorpong
+          git pull --ff-only
+        fi
+        echo 'Cloned contents of cloudnativeblazorpong repository:'
+        ls /shared/cloudnativeblazorpong
+
+        echo 'Copying Blazorpong.DB.AzureSql project files…'
+        cp /shared/cloudnativeblazorpong/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac \
+          /tmp/yourdb.dacpac
+        echo 'DACPAC copied to /tmp/yourdb.dacpac'
+
+        chmod +x /shared/cloudnativeblazorpong/src/scripts/initcontainer.sh
+        /shared/cloudnativeblazorpong/src/scripts/initcontainer.sh
+    restart: "no"
+
   webapp:
     image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web:latest
     container_name: webapp
@@ -65,37 +106,27 @@ services:
       timeout: 1s
       retries: 10
 
-  initcontainer:
-    image: mcr.microsoft.com/mssql-tools
-    user: root # run as root so apt-get can write
-    depends_on:
-      - azuresql
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac:/tmp/yourdb.dacpac:ro
-      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/scripts/initcontainer.sh:/usr/local/bin/initcontainer.sh:ro
-    environment:
-      - SA_PASSWORD=yourStrong(!)Password
-    entrypoint: ["/usr/local/bin/initcontainer.sh"]
-    restart: "no"
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
       - "9090"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - repo:/shared:ro
+    command:
+      - "--config.file=/shared/cloudnativeblazorpong/src/Observability/prometheus.yaml"
 
   collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: collector
-    command: [ "--config=/etc/collector.yaml" ]
     ports:
       - "4317:4317"
       - "4318:4318"
       - "8889"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/otel-collector-config.yaml:/etc/collector.yaml
+      - repo:/shared:ro
+    command:
+      - "--config=/shared/cloudnativeblazorpong/src/Observability/otel-collector-config.yaml"
     depends_on:
       - tempo
       - prometheus
@@ -104,9 +135,10 @@ services:
   tempo:
     image: grafana/tempo:latest
     container_name: tempo
-    command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/tempo.yaml:/etc/tempo.yaml
+      - repo:/shared:ro
+    command:
+      - "-config.file=/shared/cloudnativeblazorpong/src/Observability/tempo.yaml"
     ports:
       - "3200"   # tempo
       - "4317"  # otlp grpc
@@ -118,14 +150,14 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/dashboards:/etc/grafana/dashboards
+      - repo:/shared:ro
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+      # point Grafana at the freshly-scaffolded provisioning folder:
+      - GF_PATHS_PROVISIONING=/shared/cloudnativeblazorpong/src/Observability/grafana/provisioning
     depends_on:
       - tempo
       - loki
@@ -134,8 +166,9 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: loki
-    command: -config.file=/etc/loki.yaml
     ports:
       - "3100:3100"
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER-.}/src/Observability/loki.yaml:/etc/loki.yaml
+      - repo:/shared:ro
+    command:
+      - "-config.file=/shared/cloudnativeblazorpong/src/Observability/loki.yaml"
