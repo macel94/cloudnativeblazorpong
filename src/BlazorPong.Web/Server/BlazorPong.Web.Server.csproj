@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.7" />
 
     <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="*-*" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="*" />
