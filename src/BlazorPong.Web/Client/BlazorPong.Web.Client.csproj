@@ -15,6 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.8" />
+    <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="9.0.8" />
     <ProjectReference Include="..\..\BlazorPong.Web.Components\BlazorPong.Web.Components.csproj" />
     <ProjectReference Include="..\Shared\BlazorPong.Web.Shared.csproj" />
   </ItemGroup>
