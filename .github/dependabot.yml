@@ -1,13 +1,28 @@
 version: 2
 updates:
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
   # Enable version updates for NuGet
   - package-ecosystem: "nuget"
     directory: "/src" # Check the src directory for .NET project files
     schedule:
-      interval: "daily"
+      interval: "weekly"
     # Group all nuget updates into a single PR
     groups:
       nuget-updates:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/src" # Check the src directory for .NET project files
+    schedule:
+      interval: "weekly"
+    # Group all nuget updates into a single PR
+    groups:
+      all-dotnet-sdk:
         patterns:
           - "*"
 
@@ -15,7 +30,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/" # Following the docs https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
     schedule:
-      interval: "daily"
+      interval: "weekly"
     # Group all GitHub Actions updates into a single PR
     groups:
       actions-updates:
@@ -28,7 +43,7 @@ updates:
       - "/src/BlazorPong.SignalR" # Dockerfile in BlazorPong.SignalR
       - "/src/BlazorPong.Web/Server" # Dockerfile in BlazorPong.Web/Server
     schedule:
-      interval: "daily"
+      interval: "weekly"
     groups:
       docker-updates: # Group Docker updates
         patterns:
