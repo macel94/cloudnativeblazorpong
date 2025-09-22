@@ -21,7 +21,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="9.0.9" />
     <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="*-*" />
-    <PackageReference Include="StackExchange.Redis" Version="2.9.11" />
+    <PackageReference Include="StackExchange.Redis" Version="2.9.17" />
 
     <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="*-*" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="*" />
