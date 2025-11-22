@@ -43,9 +43,18 @@ jobs:
           docker compose -f src/docker-compose.ci.yml up --pull always -d \
             webapp signalr redis azuresql prometheus collector tempo loki grafana
 
+      - name: Dump all logs (before tests)
+        run: docker compose -f src/docker-compose.ci.yml logs --no-color
+
       - name: Run Playwright tests
         # ← RUN PLAYWRIGHT IN THE FOREGROUND: logs stream to Actions console
         run: docker compose -f src/docker-compose.ci.yml run --rm playwright
+
+      - name: Dump all logs and save those to a file (after tests)
+        if: always()
+        run: |
+          docker compose -f src/docker-compose.ci.yml logs
+          docker compose -f src/docker-compose.ci.yml logs --no-color > docker-compose-logs-after-tests.txt
 
       - name: Upload Playwright artifacts
         if: always()
@@ -56,4 +65,5 @@ jobs:
             src/tests-e2e/playwright-report/
             src/tests-e2e/test-results/
             src/tests-e2e/screenshots/
+            docker-compose-logs-after-tests.txt
           retention-days: 30
