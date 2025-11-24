@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set LOCAL_WORKSPACE_FOLDER env variable
         run: echo "LOCAL_WORKSPACE_FOLDER=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
