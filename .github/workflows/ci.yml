@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set LOCAL_WORKSPACE_FOLDER env variable
         run: echo "LOCAL_WORKSPACE_FOLDER=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload Playwright artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-test-results-${{ github.run_number }}
           path: |
