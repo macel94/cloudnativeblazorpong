@@ -29,7 +29,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Redis=redis:6379
-      - ConnectionStrings__AzureSql=Server=azuresql;Database=BlazorpongDB;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True;Encrypt=False;
+      - ConnectionStrings__PostgreSql=Host=postgres;Port=5432;Database=blazorpongdb;Username=postgres;Password=yourStrong(!)Password
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_RESOURCE_ATTRIBUTES=service.name=signalr
@@ -50,32 +50,34 @@ services:
     ports:
       - "6379:6379"
 
-  azuresql:
-    image: "mcr.microsoft.com/mssql/server:2025-latest"
-    container_name: azuresql
-    hostname: azuresql
+  postgres:
+    image: "postgres:17-alpine"
+    container_name: postgres
+    hostname: postgres
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=yourStrong(!)Password
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=yourStrong(!)Password
+      - POSTGRES_DB=blazorpongdb
     ports:
-      - "1433:1433"
+      - "5432:5432"
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$$MSSQL_SA_PASSWORD" -Q "select 1"
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s
       timeout: 1s
       retries: 10
 
   initcontainer:
-    image: mcr.microsoft.com/mssql-tools # ← official sqlcmd/bcp image :contentReference[oaicite:0]{index=0}
-    user: root # run as root so apt-get can write
+    image: postgres:17-alpine
     depends_on:
-      - azuresql
+      postgres:
+        condition: service_healthy
     volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac:/tmp/yourdb.dacpac:ro
-      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/scripts/initcontainer.sh:/usr/local/bin/initcontainer.sh:ro
+      - ${LOCAL_WORKSPACE_FOLDER:-.}/src/scripts/init-postgres.sh:/usr/local/bin/init-postgres.sh:ro
     environment:
-      - SA_PASSWORD=yourStrong(!)Password
-    entrypoint: ["/usr/local/bin/initcontainer.sh"]
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=yourStrong(!)Password
+      - POSTGRES_DB=blazorpongdb
+    entrypoint: ["/bin/sh", "/usr/local/bin/init-postgres.sh"]
     restart: "no"
 
   prometheus:

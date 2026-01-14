@@ -36,10 +36,10 @@ public static class WebApplicationBuilderExtensions
         builder.Services.AddSingleton<RedisRoomStateCache>();
     }
 
-    public static void AddAzureSql(this WebApplicationBuilder builder)
+    public static void AddPostgreSql(this WebApplicationBuilder builder)
     {
-        var sqlConnectionString = builder.Configuration.GetConnectionString("AzureSql") ?? throw new Exception("Azure SQL connection string is missing");
-        builder.Services.AddDbContext<PongDbContext>(options => options.UseSqlServer(sqlConnectionString), contextLifetime: ServiceLifetime.Singleton);
+        var pgConnectionString = builder.Configuration.GetConnectionString("PostgreSql") ?? throw new Exception("PostgreSQL connection string is missing");
+        builder.Services.AddDbContext<PongDbContext>(options => options.UseNpgsql(pgConnectionString), contextLifetime: ServiceLifetime.Singleton);
     }
 
     public static void AddGameServices(this WebApplicationBuilder builder)

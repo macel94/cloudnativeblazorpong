@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 //builder.Services.AddLogging();
 builder.AddRedis();
-builder.AddAzureSql();
+builder.AddPostgreSql();
 builder.AddHostedServices();
 builder.AddGameServices();
 builder.Services.AddCors(options =>

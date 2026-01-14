@@ -19,9 +19,9 @@ public partial class PongDbContext : DbContext
     {
         modelBuilder.Entity<Client>(entity =>
         {
-            entity.HasKey(e => new { e.Username, e.ConnectionId }).HasName("PK__tmp_ms_x__776823AC2783C4ED");
+            entity.HasKey(e => new { e.Username, e.ConnectionId }).HasName("pk_client");
 
-            entity.ToTable("Client");
+            entity.ToTable("client");
 
             entity.Property(e => e.Username).HasMaxLength(50);
             entity.Property(e => e.ConnectionId).HasMaxLength(50);
@@ -29,16 +29,16 @@ public partial class PongDbContext : DbContext
             entity.HasOne(d => d.Room).WithMany(p => p.Clients)
                 .HasForeignKey(d => d.RoomId)
                 .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK__Client__RoomId__02FC7413");
+                .HasConstraintName("fk_client_room");
         });
 
         modelBuilder.Entity<Room>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Room__3214EC0783A5D6A8");
+            entity.HasKey(e => e.Id).HasName("pk_room");
 
-            entity.ToTable("Room");
+            entity.ToTable("room");
 
-            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(e => e.ServerName).HasMaxLength(50);
         });
 
