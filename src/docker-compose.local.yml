@@ -82,6 +82,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=yourStrong(!)Password
+      - PGPASSWORD=yourStrong(!)Password
       - POSTGRES_DB=blazorpongdb
     entrypoint: ["/bin/sh", "/usr/local/bin/init-postgres.sh"]
     restart: "no"

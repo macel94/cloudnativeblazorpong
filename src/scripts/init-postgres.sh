@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 set -euo pipefail
 
 echo '🔧 Initializing PostgreSQL…'
 
 # Wait for PostgreSQL to be ready
-until PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1" > /dev/null 2>&1; do
+until psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1" > /dev/null 2>&1; do
   echo '⏳ Waiting for PostgreSQL…'
   sleep 2
 done
@@ -12,7 +12,7 @@ echo '✅ PostgreSQL is up.'
 
 # Create the schema
 echo '📦 Creating database schema…'
-PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
+psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
   -- Enable UUID extension
   CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 

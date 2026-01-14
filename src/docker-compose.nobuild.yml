@@ -13,6 +13,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=yourStrong(!)Password
+      - PGPASSWORD=yourStrong(!)Password
       - POSTGRES_DB=blazorpongdb
     command:
       - sh
