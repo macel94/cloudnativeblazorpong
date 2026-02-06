@@ -44,4 +44,4 @@ data:
         version: 1
         editable: false
         jsonData:
-        httpMethod: GET
+          httpMethod: GET

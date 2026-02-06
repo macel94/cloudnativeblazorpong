@@ -24,7 +24,10 @@ spec:
             - name: ACCEPT_EULA
               value: "Y"
             - name: MSSQL_SA_PASSWORD
-              value: "yourStrong(!)Password"
+              valueFrom:
+                secretKeyRef:
+                  name: azuresql-credentials
+                  key: MSSQL_SA_PASSWORD
           ports:
             - containerPort: 1433
               protocol: TCP
@@ -33,7 +36,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "yourStrong(!)Password" -Q "SELECT 1"
+                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
             initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 3
@@ -43,7 +46,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "yourStrong(!)Password" -Q "SELECT 1"
+                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3

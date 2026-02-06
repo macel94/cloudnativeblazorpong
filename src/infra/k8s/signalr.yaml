@@ -26,7 +26,10 @@ spec:
             - name: ConnectionStrings__Redis
               value: "redis:6379"
             - name: ConnectionStrings__AzureSql
-              value: "Server=azuresql;Database=BlazorpongDB;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True;Encrypt=False;"
+              valueFrom:
+                secretKeyRef:
+                  name: azuresql-credentials
+                  key: SIGNALR_CONNECTION_STRING
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://collector:4317"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL

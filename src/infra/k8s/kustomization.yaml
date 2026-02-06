@@ -5,6 +5,8 @@ namespace: blazorpong
 
 resources:
   - namespace.yaml
+  # Secrets
+  - secret-azuresql.yaml
   # ConfigMaps
   - configmap-otel-collector.yaml
   - configmap-prometheus.yaml

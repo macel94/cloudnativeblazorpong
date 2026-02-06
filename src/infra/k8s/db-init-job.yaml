@@ -20,7 +20,10 @@ spec:
           image: mcr.microsoft.com/mssql-tools
           env:
             - name: SA_PASSWORD
-              value: "yourStrong(!)Password"
+              valueFrom:
+                secretKeyRef:
+                  name: azuresql-credentials
+                  key: SA_PASSWORD
           command:
             - bash
             - -euxc
