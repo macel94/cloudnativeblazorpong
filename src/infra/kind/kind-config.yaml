@@ -1,5 +1,5 @@
 # Kind cluster configuration for cloudnativeblazorpong
-# Maps container port 80 to host port 8080 for Gateway API access
+# Maps container port 30080 to host port 8080 for Gateway API access
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
