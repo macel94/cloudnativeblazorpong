@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/part-of: blazorpong
+data:
+  tempo.yaml: |
+    server:
+      http_listen_port: 3200
+
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            http:
+            grpc:
+
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /tmp/tempo/blocks

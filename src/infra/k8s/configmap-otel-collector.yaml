@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/name: collector
+    app.kubernetes.io/part-of: blazorpong
+data:
+  collector.yaml: |
+    receivers:
+      otlp/app:
+        protocols:
+          grpc:
+          http:
+
+    exporters:
+      debug:
+        verbosity: detailed
+      otlp/tempo:
+        endpoint: tempo:4317
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        send_timestamps: true
+      loki:
+        endpoint: http://loki:3100/loki/api/v1/push
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp/app]
+          exporters: [otlp/tempo]
+        metrics:
+          receivers: [otlp/app]
+          exporters: [prometheus]
+        logs:
+          receivers: [otlp/app]
+          exporters: [debug, loki]

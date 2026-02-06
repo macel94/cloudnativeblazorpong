@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/name: db-init
+    app.kubernetes.io/part-of: blazorpong
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db-init
+        app.kubernetes.io/part-of: blazorpong
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: db-init
+          image: mcr.microsoft.com/mssql-tools
+          env:
+            - name: SA_PASSWORD
+              value: "yourStrong(!)Password"
+          command:
+            - bash
+            - -euxc
+            - |
+              apt-get update
+              apt-get install -y git
+              rm -rf /var/lib/apt/lists/*
+
+              echo 'Cloning CloudnativeBlazorpong…'
+              git clone --depth 1 https://github.com/macel94/cloudnativeblazorpong.git /tmp/cloudnativeblazorpong
+
+              echo 'Copying DACPAC…'
+              cp /tmp/cloudnativeblazorpong/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac \
+                /tmp/yourdb.dacpac
+
+              chmod +x /tmp/cloudnativeblazorpong/src/scripts/initcontainer.sh
+              /tmp/cloudnativeblazorpong/src/scripts/initcontainer.sh

@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: blazorpong
+
+resources:
+  - namespace.yaml
+  # ConfigMaps
+  - configmap-otel-collector.yaml
+  - configmap-prometheus.yaml
+  - configmap-tempo.yaml
+  - configmap-loki.yaml
+  - configmap-grafana-datasources.yaml
+  # Data stores
+  - redis.yaml
+  - azuresql.yaml
+  # DB initialization
+  - db-init-job.yaml
+  # Observability
+  - tempo.yaml
+  - loki.yaml
+  - prometheus.yaml
+  - collector.yaml
+  - grafana.yaml
+  # Application
+  - signalr.yaml
+  - webapp.yaml
+  # Gateway API
+  - gateway.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize

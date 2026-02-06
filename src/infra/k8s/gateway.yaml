@@ -1,0 +1,41 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: blazorpong-gateway
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/part-of: blazorpong
+spec:
+  gatewayClassName: envoy
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: webapp-route
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/name: webapp
+    app.kubernetes.io/part-of: blazorpong
+spec:
+  parentRefs:
+    - name: blazorpong-gateway
+      namespace: blazorpong
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /gamehub
+      backendRefs:
+        - name: signalr
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: webapp
+          port: 8080

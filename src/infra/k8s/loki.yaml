@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/part-of: blazorpong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loki
+        app.kubernetes.io/part-of: blazorpong
+    spec:
+      containers:
+        - name: loki
+          image: grafana/loki:latest
+          args:
+            - -config.file=/etc/loki.yaml
+          ports:
+            - containerPort: 3100
+              protocol: TCP
+          volumeMounts:
+            - name: loki-config
+              mountPath: /etc/loki.yaml
+              subPath: loki.yaml
+              readOnly: true
+      volumes:
+        - name: loki-config
+          configMap:
+            name: loki-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: blazorpong
+  labels:
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/part-of: blazorpong
+spec:
+  selector:
+    app.kubernetes.io/name: loki
+  ports:
+    - name: http
+      port: 3100
+      targetPort: 3100
