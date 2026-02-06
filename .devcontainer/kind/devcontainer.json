@@ -1,0 +1,57 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-in-docker
+{
+	"name": "KIND (Kubernetes IN Docker)",
+	// Use the same base image as the docker-outside-of-docker configuration
+	"image": "mcr.microsoft.com/devcontainers/dotnet:2-10.0",
+	"features": {
+		// Docker-in-Docker is required for KIND to run its own Docker daemon
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		// KIND (Kubernetes IN Docker) for local Kubernetes clusters
+		"ghcr.io/mpriscella/features/kind:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/azure-cli:1": {},
+		// NPM
+		"ghcr.io/devcontainers/features/node:1": {},
+		"ghcr.io/azure/azure-dev/azd:latest": {},
+		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-dotnettools.csdevkit",
+				"ms-mssql.mssql",
+				"ms-playwright.playwright",
+				"ms-azuretools.vscode-containers",
+				"GitHub.copilot",
+				"ms-vscode.powershell",
+				"ms-kubernetes-tools.vscode-aks-tools"
+			]
+		}
+	},
+	// Use this environment variable if you need to bind mount your local source code into a new container.
+	"remoteEnv": {
+		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+	},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+		6350,
+		6401,
+		6351,
+		6402,
+		6379,
+		1433,
+		8080,
+		9090,
+		4317,
+		4318,
+		3000,
+		3100,
+		3200,
+		8889
+	],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "bash .devcontainer/kind/postCreateCommand.sh",
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "root"
+}
