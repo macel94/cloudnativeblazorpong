@@ -7,34 +7,33 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 TESTS_DIR="${REPO_ROOT}/src/tests-e2e"
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 
-echo "=== Setting up port-forward in background ==="
+cleanup() {
+  echo "Cleaning up port-forwards..."
+  jobs -p | xargs -r kill 2>/dev/null || true
+}
+trap cleanup EXIT
 
-# Find the Envoy proxy service
+echo "=== Setting up port-forwards ==="
+
+# Try Gateway proxy first
 PROXY_SVC=""
-PROXY_NS="envoy-gateway-system"
-
 for ns in envoy-gateway-system blazorpong; do
   SVC=$(kubectl get svc -n "${ns}" \
     -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
     -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
   if [ -n "${SVC}" ]; then
     PROXY_SVC="${SVC}"
-    PROXY_NS="${ns}"
+    echo "Found Gateway proxy: ${ns}/${SVC}"
+    kubectl port-forward -n "${ns}" "svc/${SVC}" 8080:8080 &
     break
   fi
 done
 
 if [ -z "${PROXY_SVC}" ]; then
-  echo "ERROR: Could not find Envoy proxy service"
-  echo "Available services:"
-  kubectl get svc --all-namespaces
-  exit 1
+  echo "No Gateway proxy found. Port-forwarding services directly."
+  kubectl port-forward -n blazorpong svc/webapp 8080:8080 &
+  kubectl port-forward -n blazorpong svc/signalr 8081:8080 &
 fi
-
-# Start port-forward in background
-kubectl port-forward -n "${PROXY_NS}" "svc/${PROXY_SVC}" 8080:8080 &
-PF_PID=$!
-trap 'kill ${PF_PID} 2>/dev/null || true' EXIT
 
 # Wait for port-forward to be ready
 echo "Waiting for port-forward..."
@@ -45,6 +44,7 @@ for i in $(seq 1 30); do
   fi
   if [ "$i" -eq 30 ]; then
     echo "ERROR: Port-forward did not become ready in time"
+    kubectl get pods -n blazorpong
     exit 1
   fi
   sleep 1
@@ -53,7 +53,7 @@ done
 echo "=== Running Playwright tests ==="
 cd "${TESTS_DIR}"
 npm install
-npx playwright install --with-deps chromium
+npx playwright install --with-deps chrome
 BASE_URL="${BASE_URL}" npx playwright test
 
 echo "=== Tests complete ==="

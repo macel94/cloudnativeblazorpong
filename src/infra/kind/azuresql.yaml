@@ -18,6 +18,7 @@ spec:
       containers:
         - name: azuresql
           image: mcr.microsoft.com/mssql/server:2025-latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: ACCEPT_EULA
               value: "Y"
@@ -31,11 +32,11 @@ spec:
               command:
                 - /bin/bash
                 - -c
-                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
-            initialDelaySeconds: 15
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 10
+                - /opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1 -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 15
 ---
 apiVersion: v1
 kind: Service

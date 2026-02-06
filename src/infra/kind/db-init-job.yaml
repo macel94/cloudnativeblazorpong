@@ -6,7 +6,7 @@ metadata:
   labels:
     app: db-init
 spec:
-  backoffLimit: 5
+  backoffLimit: 10
   template:
     metadata:
       labels:
@@ -15,7 +15,8 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: db-init
-          image: mcr.microsoft.com/mssql-tools
+          image: mcr.microsoft.com/mssql/server:2025-latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: SA_PASSWORD
               value: "yourStrong(!)Password"
@@ -23,14 +24,35 @@ spec:
             - bash
             - -euxc
             - |
-              apt-get update
-              apt-get install -y git
-              rm -rf /var/lib/apt/lists/*
+              # Wait for SQL Server to be available
+              for i in $(seq 1 30); do
+                /opt/mssql-tools18/bin/sqlcmd -S azuresql -C -U sa -P "$SA_PASSWORD" -Q "SELECT 1" 2>/dev/null && break
+                echo "Waiting for SQL Server... ($i)"
+                sleep 5
+              done
 
-              git clone --depth 1 https://github.com/macel94/cloudnativeblazorpong.git /tmp/repo
+              # Create database and tables
+              /opt/mssql-tools18/bin/sqlcmd -S azuresql -C -U sa -P "$SA_PASSWORD" -Q "
+                IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'BlazorpongDB')
+                  CREATE DATABASE BlazorpongDB;
+              "
 
-              cp /tmp/repo/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac \
-                /tmp/yourdb.dacpac
+              /opt/mssql-tools18/bin/sqlcmd -S azuresql -C -U sa -P "$SA_PASSWORD" -d BlazorpongDB -Q "
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Room')
+                  CREATE TABLE [dbo].[Room] (
+                    [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+                    [ServerName] NVARCHAR(50) NULL
+                  );
 
-              chmod +x /tmp/repo/src/scripts/initcontainer.sh
-              /tmp/repo/src/scripts/initcontainer.sh
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Client')
+                  CREATE TABLE [dbo].[Client] (
+                    [Username] NVARCHAR(50) NOT NULL,
+                    [RoomId] UNIQUEIDENTIFIER NOT NULL,
+                    [Role] TINYINT NULL,
+                    [ConnectionId] NVARCHAR(50) NOT NULL,
+                    PRIMARY KEY ([Username], [ConnectionId]),
+                    FOREIGN KEY ([RoomId]) REFERENCES Room(Id)
+                  );
+              "
+
+              echo "Database initialization complete!"

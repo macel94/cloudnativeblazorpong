@@ -18,6 +18,7 @@ spec:
       containers:
         - name: signalr
           image: ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: Development

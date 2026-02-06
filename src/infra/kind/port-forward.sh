@@ -1,32 +1,44 @@
 #!/usr/bin/env bash
-# port-forward.sh - Forward the Envoy Gateway proxy port to localhost:8080
+# port-forward.sh - Forward webapp and signalr services to localhost
+# This sets up two port-forwards:
+#   - webapp  -> localhost:8080 (main web app)
+#   - signalr -> localhost:8081 (for direct SignalR access)
+# If Gateway API is deployed, it forwards the Gateway proxy instead.
 set -euo pipefail
 
-echo "=== Setting up port-forward to Envoy Gateway ==="
+cleanup() {
+  echo ""
+  echo "Stopping port-forwards..."
+  jobs -p | xargs -r kill 2>/dev/null || true
+}
+trap cleanup EXIT
 
-# Get the Envoy proxy service name in the envoy-gateway-system namespace
-PROXY_SVC=$(kubectl get svc -n envoy-gateway-system \
-  -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
-  -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+echo "=== Setting up port-forwards ==="
 
-if [ -z "${PROXY_SVC}" ]; then
-  echo "Gateway proxy service not found. Checking all namespaces..."
-  PROXY_NS=$(kubectl get svc --all-namespaces \
-    -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
-    -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null || true)
-  PROXY_SVC=$(kubectl get svc --all-namespaces \
+# Try Gateway proxy first
+PROXY_SVC=""
+for ns in envoy-gateway-system blazorpong; do
+  SVC=$(kubectl get svc -n "${ns}" \
     -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
     -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-  if [ -z "${PROXY_SVC}" ]; then
-    echo "ERROR: Could not find Envoy proxy service for blazorpong-gateway"
-    echo "Available services:"
-    kubectl get svc --all-namespaces
-    exit 1
+  if [ -n "${SVC}" ]; then
+    PROXY_SVC="${SVC}"
+    echo "Found Gateway proxy: ${ns}/${SVC}"
+    echo "Forwarding ${ns}/${SVC}:8080 -> localhost:8080"
+    kubectl port-forward -n "${ns}" "svc/${SVC}" 8080:8080 &
+    echo "Press Ctrl+C to stop."
+    wait
+    exit 0
   fi
-else
-  PROXY_NS="envoy-gateway-system"
-fi
+done
 
-echo "Forwarding ${PROXY_NS}/${PROXY_SVC}:8080 -> localhost:8080"
+# Fallback: forward webapp and signalr directly
+echo "No Gateway proxy found. Forwarding services directly."
+echo "  webapp:8080  -> localhost:8080"
+echo "  signalr:8080 -> localhost:8081"
+
+kubectl port-forward -n blazorpong svc/webapp 8080:8080 &
+kubectl port-forward -n blazorpong svc/signalr 8081:8080 &
+
 echo "Press Ctrl+C to stop."
-kubectl port-forward -n "${PROXY_NS}" "svc/${PROXY_SVC}" 8080:8080
+wait
