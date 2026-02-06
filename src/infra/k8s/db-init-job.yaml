@@ -17,7 +17,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: db-init
-          image: mcr.microsoft.com/mssql-tools
+          image: mcr.microsoft.com/dotnet/sdk:8.0
           imagePullPolicy: IfNotPresent
           env:
             - name: SA_PASSWORD
@@ -29,16 +29,22 @@ spec:
             - bash
             - -euxc
             - |
-              apt-get update
-              apt-get install -y git
-              rm -rf /var/lib/apt/lists/*
+              echo '⬇️ Installing sqlpackage…'
+              dotnet tool install -g microsoft.sqlpackage
+              export PATH="$PATH:/root/.dotnet/tools"
 
-              echo 'Cloning CloudnativeBlazorpong…'
-              git clone --depth 1 https://github.com/macel94/cloudnativeblazorpong.git /tmp/cloudnativeblazorpong
+              echo '⬇️ Cloning repo to get DACPAC…'
+              apt-get update -qq && apt-get install -y -qq git >/dev/null
+              git clone --depth 1 https://github.com/macel94/cloudnativeblazorpong.git /tmp/repo
 
-              echo 'Copying DACPAC…'
-              cp /tmp/cloudnativeblazorpong/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac \
-                /tmp/yourdb.dacpac
+              echo '⏳ Waiting for SQL Server…'
+              for i in $(seq 1 60); do
+                sqlpackage /? >/dev/null 2>&1 && break || sleep 1
+              done
 
-              chmod +x /tmp/cloudnativeblazorpong/src/scripts/initcontainer.sh
-              /tmp/cloudnativeblazorpong/src/scripts/initcontainer.sh
+              echo '📦 Publishing DACPAC…'
+              sqlpackage /Action:Publish \
+                /SourceFile:/tmp/repo/src/Blazorpong.DB.AzureSql/bin/Debug/Blazorpong.DB.AzureSql.dacpac \
+                "/TargetConnectionString:Server=azuresql;Initial Catalog=BlazorpongDB;User ID=sa;Password=${SA_PASSWORD};Encrypt=False;TrustServerCertificate=True"
+
+              echo '🎉 Done.'

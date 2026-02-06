@@ -58,7 +58,7 @@ sleep 3
 # ── 4. Verify services are reachable ─────────────────────────────────────
 echo "▶ Verifying webapp is reachable…"
 for i in $(seq 1 30); do
-  if curl -sf "http://localhost:${WEBAPP_PORT}/" > /dev/null 2>&1; then
+  if curl -sf --max-time 10 "http://localhost:${WEBAPP_PORT}/" > /dev/null 2>&1; then
     echo "  ✅ webapp is reachable at http://localhost:${WEBAPP_PORT}"
     break
   fi
@@ -73,7 +73,7 @@ done
 
 echo "▶ Verifying signalr is reachable…"
 for i in $(seq 1 30); do
-  if curl -sf "http://localhost:${SIGNALR_PORT}/" > /dev/null 2>&1; then
+  if curl -sf --max-time 10 "http://localhost:${SIGNALR_PORT}/" > /dev/null 2>&1; then
     echo "  ✅ signalr is reachable at http://localhost:${SIGNALR_PORT}"
     break
   fi

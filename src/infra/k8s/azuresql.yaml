@@ -37,21 +37,21 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
-            initialDelaySeconds: 15
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 10
+                - /opt/mssql-tools18/bin/sqlcmd -S '127.0.0.1,1433' -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -No
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 15
           livenessProbe:
             exec:
               command:
                 - /bin/sh
                 - -c
-                - /opt/mssql-tools/bin/sqlcmd -S localhost -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 5
+                - /opt/mssql-tools18/bin/sqlcmd -S '127.0.0.1,1433' -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -No
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 10
 ---
 apiVersion: v1
 kind: Service

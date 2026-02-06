@@ -30,7 +30,7 @@ IMAGES=(
   "ghcr.io/macel94/cloudnativeblazorpong/blazorpong-web:latest"
   "ghcr.io/macel94/cloudnativeblazorpong/blazorpong-signalr:latest"
   "mcr.microsoft.com/mssql/server:2025-latest"
-  "mcr.microsoft.com/mssql-tools:latest"
+  "mcr.microsoft.com/dotnet/sdk:8.0"
   "otel/opentelemetry-collector-contrib:latest"
   "grafana/tempo:latest"
   "grafana/loki:latest"
