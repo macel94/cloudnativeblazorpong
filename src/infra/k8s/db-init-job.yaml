@@ -18,6 +18,7 @@ spec:
       containers:
         - name: db-init
           image: mcr.microsoft.com/mssql-tools
+          imagePullPolicy: IfNotPresent
           env:
             - name: SA_PASSWORD
               valueFrom:

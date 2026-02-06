@@ -20,12 +20,15 @@ spec:
       containers:
         - name: redis
           image: redis:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 6379
               protocol: TCP
           readinessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command:
+                - redis-cli
+                - ping
             initialDelaySeconds: 5
             periodSeconds: 5
 ---
