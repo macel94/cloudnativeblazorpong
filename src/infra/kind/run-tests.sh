@@ -10,29 +10,31 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 echo "=== Setting up port-forward in background ==="
 
 # Find the Envoy proxy service
-PROXY_SVC=$(kubectl get svc -n envoy-gateway-system \
-  -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
-  -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-
+PROXY_SVC=""
 PROXY_NS="envoy-gateway-system"
-if [ -z "${PROXY_SVC}" ]; then
-  PROXY_NS=$(kubectl get svc --all-namespaces \
-    -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
-    -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null || true)
-  PROXY_SVC=$(kubectl get svc --all-namespaces \
+
+for ns in envoy-gateway-system blazorpong; do
+  SVC=$(kubectl get svc -n "${ns}" \
     -l gateway.envoyproxy.io/owning-gateway-name=blazorpong-gateway \
     -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-fi
+  if [ -n "${SVC}" ]; then
+    PROXY_SVC="${SVC}"
+    PROXY_NS="${ns}"
+    break
+  fi
+done
 
 if [ -z "${PROXY_SVC}" ]; then
   echo "ERROR: Could not find Envoy proxy service"
+  echo "Available services:"
+  kubectl get svc --all-namespaces
   exit 1
 fi
 
 # Start port-forward in background
 kubectl port-forward -n "${PROXY_NS}" "svc/${PROXY_SVC}" 8080:8080 &
 PF_PID=$!
-trap "kill ${PF_PID} 2>/dev/null || true" EXIT
+trap 'kill ${PF_PID} 2>/dev/null || true' EXIT
 
 # Wait for port-forward to be ready
 echo "Waiting for port-forward..."
@@ -41,14 +43,17 @@ for i in $(seq 1 30); do
     echo "Port-forward ready!"
     break
   fi
+  if [ "$i" -eq 30 ]; then
+    echo "ERROR: Port-forward did not become ready in time"
+    exit 1
+  fi
   sleep 1
 done
 
 echo "=== Running Playwright tests ==="
 cd "${TESTS_DIR}"
 npm install
-npx playwright install --with-deps
-npx playwright install chrome
+npx playwright install --with-deps chromium
 BASE_URL="${BASE_URL}" npx playwright test
 
 echo "=== Tests complete ==="
