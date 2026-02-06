@@ -1,0 +1,57 @@
+# Gateway API resources for cloudnativeblazorpong
+# Uses standard Gateway API v1 with a GatewayClass and Gateway + HTTPRoute
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: blazorpong-gateway-class
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: blazorpong-gateway
+  namespace: blazorpong
+spec:
+  gatewayClassName: blazorpong-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: signalr-route
+  namespace: blazorpong
+spec:
+  parentRefs:
+    - name: blazorpong-gateway
+      namespace: blazorpong
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /gamehub
+      backendRefs:
+        - name: signalr
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: webapp-route
+  namespace: blazorpong
+spec:
+  parentRefs:
+    - name: blazorpong-gateway
+      namespace: blazorpong
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: webapp
+          port: 8080

@@ -1,0 +1,46 @@
+# Minimal collector stub to satisfy the app's OTEL_EXPORTER_OTLP_ENDPOINT reference.
+# In a real cluster, replace with a full OpenTelemetry Collector deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collector
+  namespace: blazorpong
+  labels:
+    app: collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collector
+  template:
+    metadata:
+      labels:
+        app: collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:latest
+          args: ["--config=/etc/otelcol-contrib/config.yaml"]
+          ports:
+            - containerPort: 4317
+              protocol: TCP
+            - containerPort: 4318
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: collector
+  namespace: blazorpong
+  labels:
+    app: collector
+spec:
+  ports:
+    - name: grpc
+      port: 4317
+      targetPort: 4317
+    - name: http
+      port: 4318
+      targetPort: 4318
+  selector:
+    app: collector
